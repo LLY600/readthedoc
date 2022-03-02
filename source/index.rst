@@ -2,8 +2,8 @@ Welcome to Liu圈圈的后宫~ [手动笔芯]
 =========================================
 
 .. toctree::
-    :maxdepth: 2
-    :numbered: 2
+    :maxdepth: 4
+    :numbered: 4
 
     软件测试体系知识/index
     Python笔记/index
