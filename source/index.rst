@@ -4,6 +4,7 @@ Welcome to Liu圈圈的后宫~ [手动笔芯]
 .. toctree::
     :maxdepth: 4
     :glob:
+    :caption: 内容索引:
 
     软件测试体系知识/index
     Python笔记/index
