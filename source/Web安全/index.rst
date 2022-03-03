@@ -4,5 +4,5 @@ Web安全
 .. toctree::
     :maxdepth: 4
 
-    Nessus/index
-    Awvs/index
+    Web安全/Nessus/index
+    Web安全/Awvs/index
