@@ -7,6 +7,8 @@ Welcome to Liu圈圈的后宫~ [手动笔芯]
     软件测试体系知识/index
     Python笔记/index
     计算机网络/index
+    Web安全/Nessus
+    Web安全/Awvs
     Web安全/Nessus/Nessus破解
     Web安全/Awvs/Awvs破解
     数据库/index 
