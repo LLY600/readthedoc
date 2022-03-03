@@ -3,12 +3,12 @@ Welcome to Liu圈圈的后宫~ [手动笔芯]
 
 .. toctree::
     :maxdepth: 4
+    :glob:
 
     软件测试体系知识/index
     Python笔记/index
     计算机网络/index
-    Web安全/Nessus/index
-    Web安全/Awvs/index
+    Web安全/*
     数据库/index 
     微服务/index
     前端游乐场/index
@@ -16,4 +16,5 @@ Welcome to Liu圈圈的后宫~ [手动笔芯]
     DevOps落地笔记/index
     眼前一亮的链接备忘录/index
     文档集/index
+    环境搭建/index
     圈圈碎碎念/index
