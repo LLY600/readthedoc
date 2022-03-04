@@ -6,7 +6,7 @@
 	
     SQL注入/index
     文件上传/index
-    Web Server配置安全/index
+    WEB SERVER配置安全/index
     WEB框架漏洞/index
     访问控制/index
     加密算法安全/index

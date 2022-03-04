@@ -4,6 +4,6 @@
 .. toctree::
     :maxdepth: 4
 	
-    客户端脚本安全
-    服务端应用安全
-    业务逻辑安全
+    客户端脚本安全/index
+    服务端应用安全/index
+    业务逻辑安全/index
