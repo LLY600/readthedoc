@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>不同视角看测试 &mdash; Liu圈圈的后宫 1.0.0 文档</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/translations.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../genindex.html" />
+    <link rel="search" title="搜索" href="../../search.html" />
+    <link rel="next" title="测试的生命周期" href="%E6%B5%8B%E8%AF%95%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.html" />
+    <link rel="prev" title="测试体系概览" href="%E6%B5%8B%E8%AF%95%E4%BD%93%E7%B3%BB%E6%A6%82%E8%A7%88.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Liu圈圈的后宫
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">内容索引:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">软件测试体系知识</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">测试基础知识</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="%E6%B5%8B%E8%AF%95%E4%BD%93%E7%B3%BB%E6%A6%82%E8%A7%88.html">测试体系概览</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">不同视角看测试</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id2">按照开发阶段</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3">按照实施组织</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4">按照测试技术</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id5">测试左移和右移</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id6">左移、右移和测试的关系</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="%E6%B5%8B%E8%AF%95%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.html">测试的生命周期</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../Python%E7%AC%94%E8%AE%B0/index.html">Python笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Linux%E7%AC%94%E8%AE%B0/index.html">Linux笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/index.html">计算机网络</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Web%E5%AE%89%E5%85%A8/index.html">Web安全</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E6%95%B0%E6%8D%AE%E5%BA%93/index.html">数据库</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E5%BE%AE%E6%9C%8D%E5%8A%A1/index.html">微服务</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E5%89%8D%E7%AB%AF%E6%B8%B8%E4%B9%90%E5%9C%BA/index.html">前端游乐场</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E5%90%8E%E7%AB%AF%E8%AE%AD%E7%BB%83%E5%9C%BA/index.html">后端训练场</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../DevOps%E8%90%BD%E5%9C%B0%E7%AC%94%E8%AE%B0/index.html">DevOps落地笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E7%9C%BC%E5%89%8D%E4%B8%80%E4%BA%AE%E7%9A%84%E9%93%BE%E6%8E%A5%E5%A4%87%E5%BF%98%E5%BD%95/index.html">眼前一亮的链接备忘录</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E4%BC%9A%E5%B8%A6%E5%9B%A2%E9%98%9F%E7%9A%84%E6%8A%80%E6%9C%AF%E4%BA%BA/index.html">会带团队的技术人</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E6%96%87%E6%A1%A3%E9%9B%86/index.html">文档集</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/index.html">环境搭建</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E5%9C%88%E5%9C%88%E7%A2%8E%E7%A2%8E%E5%BF%B5/index.html">圈圈碎碎念</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Liu圈圈的后宫</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">软件测试体系知识</a> &raquo;</li>
+          <li><a href="index.html">测试基础知识</a> &raquo;</li>
+      <li>不同视角看测试</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/软件测试体系知识/测试基础知识/不同视角看测试.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>不同视角看测试<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h1>
+<section id="id2">
+<h2>按照开发阶段<a class="headerlink" href="#id2" title="永久链接至标题">¶</a></h2>
+<ul class="simple">
+<li><p><strong>单元测试</strong></p>
+<ul>
+<li><p>单元测试的被测对象是程序模块，这是软件设计的最小模块</p></li>
+</ul>
+</li>
+<li><p><strong>集成测试</strong></p>
+<ul>
+<li><p>集成测试的被测对象是将程序模块组合到一起对外暴露的接口，这里重点验证集成到一起的程序模块是否满足概要的设计要求</p></li>
+</ul>
+</li>
+<li><p><strong>确认测试</strong></p>
+<ul>
+<li><p>确认测试就要证明被测试软件完成了需求规格说明书的要求，重点是检查功能特性的符合程度</p></li>
+</ul>
+</li>
+<li><p><strong>系统测试</strong></p>
+<ul>
+<li><p>系统测试，是要在真实或者仿真环境中对被测系统进行验证，在这个阶段，除去功能性外，还要考虑到性能效率等其他质量特性的要求，在很多实际项目中，我们常常把确认测试和系统测试合二为一</p></li>
+</ul>
+</li>
+<li><p><strong>验收测试</strong></p>
+<ul>
+<li><p>验收测试，按照最初的约定，完成被测系统、需求规格说明书、用户手册三方的一致性，以及非功能特性的符合要求的验证</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id3">
+<h2>按照实施组织<a class="headerlink" href="#id3" title="永久链接至标题">¶</a></h2>
+<ul class="simple">
+<li><p><strong>单元测试</strong></p></li>
+<li><p><strong>集成测试</strong></p></li>
+<li><p><strong>确认测试</strong></p></li>
+<li><p><strong>系统测试</strong></p></li>
+<li><p><strong>验收测试</strong>（α测试、β测试）</p>
+<ul>
+<li><p>α 测试是一位用户在开发环境下的的测试活动，里面其实很强调是否有开发人员或者测试人员陪同完成验收测试，并实时记录下来出现的缺陷；</p></li>
+<li><p>β 测试是由少部分用户在真实环境下完成的验收测试，和 α 测试有一个明显区别，就是没有开发或者测试人员陪同；</p></li>
+<li><p>α 测试、β 测试都属于验收测试。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id4">
+<h2>按照测试技术<a class="headerlink" href="#id4" title="永久链接至标题">¶</a></h2>
+<ul class="simple">
+<li><p><strong>一种是按照测试过程中是否需要了解程序结构和和处理过程来划分</strong>；</p>
+<ul>
+<li><p>白盒测试</p></li>
+<li><p>灰盒测试</p></li>
+<li><p>黑盒测试</p></li>
+</ul>
+</li>
+<li><p><strong>另外一种是按照是否需要代码运行检查来划分的</strong>。</p>
+<ul>
+<li><p>静态测试</p></li>
+<li><p>动态测试</p></li>
+<li><p>白盒测试里面既有可能是静态测试，也有可能是动态测试；灰盒测试、黑盒测试就只能由动态测试来完成了。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id5">
+<h2>测试左移和右移<a class="headerlink" href="#id5" title="永久链接至标题">¶</a></h2>
+<ul class="simple">
+<li><p>在需求评审阶段针对需求的质量要对如下图所示的几个方面进行评估：</p></li>
+<li><p><strong>唯一性</strong></p>
+<ul>
+<li><p>唯一性是指对应的需求是全部系统中的唯一功能，不能存在两个相同的功能。这里面既要横向对比每次迭代中的需求，也要纵向对比已有功能。</p></li>
+</ul>
+</li>
+<li><p><strong>完整性</strong></p>
+<ul>
+<li><p>完整性是说每一个功能需求的描述都是完整的，都有对应功能的整体描述、性能描述、以及约束描述，不该有不确定性的描述。</p></li>
+</ul>
+</li>
+<li><p><strong>可测试性</strong></p>
+<ul>
+<li><p>可测试性是说每一个需求都是可以被验证的，这里面既包含了功能性也包含了非功能性。</p></li>
+</ul>
+</li>
+<li><p><strong>一致性</strong></p>
+<ul>
+<li><p>一致性是指需求之间是一致的、无冲突的，每次迭代的功能需求和已有功能也是一致的、无冲突的。</p></li>
+</ul>
+</li>
+<li><p><strong>易理解性</strong></p>
+<ul>
+<li><p>易理解性是说，需求的描述和设计是容易理解的，通过需求的描述就能判定实现的功能是怎样的。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id6">
+<h2>左移、右移和测试的关系<a class="headerlink" href="#id6" title="永久链接至标题">¶</a></h2>
+<ul class="simple">
+<li><p>在瀑布模型（一个经典的软件生命周期模型）中，最大的问题是测试工程师参加项目后的执行很难保证到位，因此测试左移最早被提出来是为了鼓励项目中能尽早完成 CodeReview、代码扫描以及单元测试，但是后续随着敏捷和 DevOps 被大家认知，测试左移也提前到需求阶段的质量评估，从而使得开发工程师、测试工程师更早地开始了协作关系。测试左移实际上将流程转移到了开发阶段的左侧， 这意味着测试从开发周期刚开始的时候就开始了，并贯穿整个开发周期。</p></li>
+<li><p>测试右移的重点是业务角度的监控，这里和运维的监控有所区别，在传统的测试中，系统上线后，测试生命周期就算结束了，线上如果出现问题也是运维工程师类的角色将问题传递回项目组再内部解决。但测试右移更关注业务连续性，运维工程师更加关注的是系统稳定性，两个岗位对项目的考核视角并不相同。推动测试右移，可以更高效地从最终用户体验的角度去提升系统的质量。</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="%E6%B5%8B%E8%AF%95%E4%BD%93%E7%B3%BB%E6%A6%82%E8%A7%88.html" class="btn btn-neutral float-left" title="测试体系概览" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="%E6%B5%8B%E8%AF%95%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.html" class="btn btn-neutral float-right" title="测试的生命周期" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, Liulinyuan.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
