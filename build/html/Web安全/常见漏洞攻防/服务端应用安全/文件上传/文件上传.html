@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WEB SERVER配置安全 &mdash; Liu圈圈的后宫 1.0.0 文档</title>
+  <title>文件上传 &mdash; Liu圈圈的后宫 1.0.0 文档</title>
       <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -19,8 +19,8 @@
     <script src="../../../../_static/js/theme.js"></script>
     <link rel="index" title="索引" href="../../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../../search.html" />
-    <link rel="next" title="SQL注入原理" href="SQL%E6%B3%A8%E5%85%A5%E5%8E%9F%E7%90%86.html" />
-    <link rel="prev" title="文件上传" href="../%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0/%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0.html" /> 
+    <link rel="next" title="WEB SERVER配置安全" href="../WEB%20SERVER%E9%85%8D%E7%BD%AE%E5%AE%89%E5%85%A8/index.html" />
+    <link rel="prev" title="文件上传" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -51,8 +51,8 @@
 <li class="toctree-l3"><a class="reference internal" href="../../%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%84%9A%E6%9C%AC%E5%AE%89%E5%85%A8/index.html">客户端脚本安全</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="../index.html">服务端应用安全</a><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="../SQL%E6%B3%A8%E5%85%A5/index.html">SQL注入</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0/index.html">文件上传</a></li>
-<li class="toctree-l4 current"><a class="current reference internal" href="#">WEB SERVER配置安全</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="index.html">文件上传</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../WEB%20SERVER%E9%85%8D%E7%BD%AE%E5%AE%89%E5%85%A8/index.html">WEB SERVER配置安全</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../WEB%E6%A1%86%E6%9E%B6%E6%BC%8F%E6%B4%9E/index.html">WEB框架漏洞</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/index.html">访问控制</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95%E5%AE%89%E5%85%A8/index.html">加密算法安全</a></li>
@@ -95,9 +95,10 @@
           <li><a href="../../../index.html">Web安全</a> &raquo;</li>
           <li><a href="../../index.html">常见漏洞攻防</a> &raquo;</li>
           <li><a href="../index.html">服务端应用安全</a> &raquo;</li>
-      <li>WEB SERVER配置安全</li>
+          <li><a href="index.html">文件上传</a> &raquo;</li>
+      <li>文件上传</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../../../../_sources/Web安全/常见漏洞攻防/服务端应用安全/WEB SERVER配置安全/index.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../../../../_sources/Web安全/常见漏洞攻防/服务端应用安全/文件上传/文件上传.md.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -105,22 +106,21 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="web-server">
-<h1>WEB SERVER配置安全<a class="headerlink" href="#web-server" title="永久链接至标题">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="SQL%E6%B3%A8%E5%85%A5%E5%8E%9F%E7%90%86.html">SQL注入原理</a></li>
-<li class="toctree-l1"><a class="reference internal" href="SQL%E6%B3%A8%E5%85%A5%E7%B1%BB%E5%9E%8B.html">SQL注入类型</a></li>
-</ul>
-</div>
+  <section id="id1">
+<h1>文件上传<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h1>
+<section id="id2">
+<h2>定义<a class="headerlink" href="#id2" title="永久链接至标题">¶</a></h2>
+<p>文件上传是大部分web应用都具备的功能，如上传附件、头像、图片等
+文件上传漏洞是开发者没有做充分的验证（前后端）情况下，允许用户上传恶意文件，如木马、病毒、恶意脚本、webshell等</p>
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0/%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0.html" class="btn btn-neutral float-left" title="文件上传" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="SQL%E6%B3%A8%E5%85%A5%E5%8E%9F%E7%90%86.html" class="btn btn-neutral float-right" title="SQL注入原理" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="文件上传" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../WEB%20SERVER%E9%85%8D%E7%BD%AE%E5%AE%89%E5%85%A8/index.html" class="btn btn-neutral float-right" title="WEB SERVER配置安全" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

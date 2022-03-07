@@ -4,5 +4,4 @@
 .. toctree::
     :maxdepth: 4
 
-    SQL注入原理
-    SQL注入类型
+    文件上传
