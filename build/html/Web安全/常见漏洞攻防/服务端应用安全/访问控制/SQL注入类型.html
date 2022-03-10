@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL注入类型 &mdash; Liu圈圈的后宫 1.0.0 文档</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/translations.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../../search.html" />
+    <link rel="next" title="加密算法安全" href="../%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95%E5%AE%89%E5%85%A8/index.html" />
+    <link rel="prev" title="SQL注入原理" href="SQL%E6%B3%A8%E5%85%A5%E5%8E%9F%E7%90%86.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> Liu圈圈的后宫
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">内容索引:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E8%BD%AF%E4%BB%B6%E6%B5%8B%E8%AF%95%E4%BD%93%E7%B3%BB%E7%9F%A5%E8%AF%86/index.html">软件测试体系知识</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Python%E7%AC%94%E8%AE%B0/index.html">Python笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Linux%E7%AC%94%E8%AE%B0/index.html">Linux笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/index.html">计算机网络</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">Web安全</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../Nessus/index.html">Nessus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../Awvs/index.html">Awvs</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">常见漏洞攻防</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%84%9A%E6%9C%AC%E5%AE%89%E5%85%A8/index.html">客户端脚本安全</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../index.html">服务端应用安全</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../SQL%E6%B3%A8%E5%85%A5/index.html">SQL注入</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0/index.html">文件上传</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../WEB%20SERVER%E9%85%8D%E7%BD%AE%E5%AE%89%E5%85%A8/index.html">WEB SERVER配置安全</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../WEB%E6%A1%86%E6%9E%B6%E6%BC%8F%E6%B4%9E/index.html">WEB框架漏洞</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="index.html">访问控制</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95%E5%AE%89%E5%85%A8/index.html">加密算法安全</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../%E6%8B%92%E7%BB%9D%E6%9C%8D%E5%8A%A1%E6%94%BB%E5%87%BB/index.html">拒绝服务攻击</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../%E5%BC%80%E5%8F%91%E8%AF%AD%E8%A8%80%E5%AE%89%E5%85%A8/index.html">开发语言安全</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../%E8%AE%A4%E8%AF%81%E4%B8%8E%E4%BC%9A%E8%AF%9D%E7%AE%A1%E7%90%86/index.html">认证与会话管理</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91%E5%AE%89%E5%85%A8/index.html">业务逻辑安全</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E6%95%B0%E6%8D%AE%E5%BA%93/index.html">数据库</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E5%BE%AE%E6%9C%8D%E5%8A%A1/index.html">微服务</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E5%89%8D%E7%AB%AF%E6%B8%B8%E4%B9%90%E5%9C%BA/index.html">前端游乐场</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E5%90%8E%E7%AB%AF%E8%AE%AD%E7%BB%83%E5%9C%BA/index.html">后端训练场</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E8%87%AA%E5%8A%A8%E5%8C%96%E5%B7%A5%E5%85%B7/index.html">自动化工具</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Docker/index.html">Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../DevOps%E8%90%BD%E5%9C%B0%E7%AC%94%E8%AE%B0/index.html">DevOps落地笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E7%9C%BC%E5%89%8D%E4%B8%80%E4%BA%AE%E7%9A%84%E9%93%BE%E6%8E%A5%E5%A4%87%E5%BF%98%E5%BD%95/index.html">眼前一亮的链接备忘录</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E4%BC%9A%E5%B8%A6%E5%9B%A2%E9%98%9F%E7%9A%84%E6%8A%80%E6%9C%AF%E4%BA%BA/index.html">会带团队的技术人</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E6%96%87%E6%A1%A3%E9%9B%86/index.html">文档集</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/index.html">环境搭建</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../%E5%9C%88%E5%9C%88%E7%A2%8E%E7%A2%8E%E5%BF%B5/index.html">圈圈碎碎念</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Liu圈圈的后宫</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Web安全</a> &raquo;</li>
+          <li><a href="../../index.html">常见漏洞攻防</a> &raquo;</li>
+          <li><a href="../index.html">服务端应用安全</a> &raquo;</li>
+          <li><a href="index.html">访问控制</a> &raquo;</li>
+      <li>SQL注入类型</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/Web安全/常见漏洞攻防/服务端应用安全/访问控制/SQL注入类型.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sql">
+<h1>SQL注入类型<a class="headerlink" href="#sql" title="永久链接至标题">¶</a></h1>
+<p>##我是内容</p>
+<p>###我是xx</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="SQL%E6%B3%A8%E5%85%A5%E5%8E%9F%E7%90%86.html" class="btn btn-neutral float-left" title="SQL注入原理" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../%E5%8A%A0%E5%AF%86%E7%AE%97%E6%B3%95%E5%AE%89%E5%85%A8/index.html" class="btn btn-neutral float-right" title="加密算法安全" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, Liulinyuan.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

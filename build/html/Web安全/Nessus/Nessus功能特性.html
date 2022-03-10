@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nessus功能特性 &mdash; Liu圈圈的后宫 1.0.0 文档</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/translations.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../genindex.html" />
+    <link rel="search" title="搜索" href="../../search.html" />
+    <link rel="next" title="Awvs" href="../Awvs/index.html" />
+    <link rel="prev" title="Nessus破解" href="Nessus%E7%A0%B4%E8%A7%A3.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Liu圈圈的后宫
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">内容索引:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../%E8%BD%AF%E4%BB%B6%E6%B5%8B%E8%AF%95%E4%BD%93%E7%B3%BB%E7%9F%A5%E8%AF%86/index.html">软件测试体系知识</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Python%E7%AC%94%E8%AE%B0/index.html">Python笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Linux%E7%AC%94%E8%AE%B0/index.html">Linux笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/index.html">计算机网络</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Web安全</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Nessus</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="Nessus%E7%A0%B4%E8%A7%A3.html">Nessus破解</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Nessus功能特性</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Nessus功能特性</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">扫描和策略设置</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3">官方文档</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../Awvs/index.html">Awvs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../%E5%B8%B8%E8%A7%81%E6%BC%8F%E6%B4%9E%E6%94%BB%E9%98%B2/index.html">常见漏洞攻防</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E6%95%B0%E6%8D%AE%E5%BA%93/index.html">数据库</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E5%BE%AE%E6%9C%8D%E5%8A%A1/index.html">微服务</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E5%89%8D%E7%AB%AF%E6%B8%B8%E4%B9%90%E5%9C%BA/index.html">前端游乐场</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E5%90%8E%E7%AB%AF%E8%AE%AD%E7%BB%83%E5%9C%BA/index.html">后端训练场</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E8%87%AA%E5%8A%A8%E5%8C%96%E5%B7%A5%E5%85%B7/index.html">自动化工具</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Docker/index.html">Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../DevOps%E8%90%BD%E5%9C%B0%E7%AC%94%E8%AE%B0/index.html">DevOps落地笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E7%9C%BC%E5%89%8D%E4%B8%80%E4%BA%AE%E7%9A%84%E9%93%BE%E6%8E%A5%E5%A4%87%E5%BF%98%E5%BD%95/index.html">眼前一亮的链接备忘录</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E4%BC%9A%E5%B8%A6%E5%9B%A2%E9%98%9F%E7%9A%84%E6%8A%80%E6%9C%AF%E4%BA%BA/index.html">会带团队的技术人</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E6%96%87%E6%A1%A3%E9%9B%86/index.html">文档集</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/index.html">环境搭建</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../%E5%9C%88%E5%9C%88%E7%A2%8E%E7%A2%8E%E5%BF%B5/index.html">圈圈碎碎念</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Liu圈圈的后宫</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Web安全</a> &raquo;</li>
+          <li><a href="index.html">Nessus</a> &raquo;</li>
+      <li>Nessus功能特性</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/Web安全/Nessus/Nessus功能特性.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="nessus">
+<h1>Nessus功能特性<a class="headerlink" href="#nessus" title="永久链接至标题">¶</a></h1>
+<section id="id1">
+<h2>Nessus功能特性<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h2>
+<ol class="simple">
+<li><p><strong>发现</strong></p>
+<ul class="simple">
+<li><p>Host Discovery（主机发现，发现实时主机和打开的端口）</p></li>
+<li><p>主机发现扫描以查看网络上有哪些主机，以及 IP 地址、FQDN、操作系统和开放端口（如果可用）等相关信息。</p></li>
+<li><p>获得主机列表后，您可以选择要在特定漏洞扫描中定位的主机。</p></li>
+<li><p>对于 IP 地址，您可以使用 CIDR 表示法（例如，192.168.0.0/24）、范围（例如，192.168.0.1-192.168.0.255）或逗号分隔列表（例如，192.168.0.0，192.168.0.1）</p></li>
+<li><p>FQDN，既全限定域名，同时带有主机名和域名的名称。（通过符号“.”）</p></li>
+<li><p>例如：主机名是bigserver,域名是mycompany.com,那么FQDN就是bigserver.mycompany.com</p></li>
+</ul>
+</li>
+<li><p><strong>漏洞</strong></p>
+<ul class="simple">
+<li><p>基本网络扫描：执行适用于任何主机的完整系统扫描</p></li>
+<li><p>高级扫描：没有任何建议的扫描，以便您可以完全自定义扫描设置</p></li>
+<li><p>高级动态扫描：没有任何建议的高级扫描，您可以在其中配置动态插件过滤器，而不是手动选择插件系列或单个插件</p></li>
+<li><p>恶意软件扫描：扫描 Windows 和 Unix 系统上的恶意软件</p></li>
+<li><p>移动设备扫描：通过 Microsoft Exchange 或 MDM 评估移动设备</p></li>
+<li><p>Web应用程序测试:扫描已发布和未知的 Web 漏洞</p></li>
+<li><p>认证补丁审核:对主机进行身份验证并枚举缺少的更新。</p></li>
+<li><p>英特尔AMT安全绕过:对 CVE-2017-5689 执行远程和本地检查。</p></li>
+<li><p>Spectre and Meltdown:对 CVE-2017-5753、CVE-2017-5715 和 CVE-2017-5754 执行远程和本地检查。</p></li>
+<li><p>WannaCry勒索软件:扫描WannaCry勒索软件（MS17-010）。</p></li>
+<li><p>Ripple20 远程扫描:检测网络中运行 Treck 堆栈的主机，这些主机可能受到 Ripple20 漏洞的影响。</p></li>
+<li><p>Zerologon远程扫描:检测 Microsoft Netlogon 特权提升漏洞 （Zerologon）。</p></li>
+<li><p>Solarigate:使用远程和本地检查检测 SolarWinds Solorigate 漏洞。</p></li>
+<li><p>2020年威胁态势回顾（TLR）:检测 Tenable 的 2020 年威胁态势回顾报告中的漏洞。</p></li>
+<li><p>代理登录:MS Exchange:执行远程和本地检查以检测与 CVE-2021-26855、CVE-2021-26857、CVE-2021-26858 和 CVE-2021-27065 相关的 Microsoft Exchange Server 漏洞。</p></li>
+<li><p>PrintNightmare:对 CVE-2021-34527（打印噩梦 Windows 打印后台处理程序漏洞）执行本地检查。</p></li>
+<li><p>活动目录入门扫描:扫描 Active Directory 中的错误配置。</p></li>
+<li><p>Log4Shell:通过本地检查检测Apache Log4j中的Log4Shell漏洞（CVE-2021-44228）。</p></li>
+<li><p>Log4Shell远程检查:通过远程检查检测Apache Log4j中的Log4Shell漏洞（CVE-2021-44228）。</p></li>
+<li><p>Log4Shell漏洞生态系统:通过本地和远程检查检测Apache Log4j中的Log4Shell漏洞（CVE-2021-44228）。此模板是动态的，并且随着第三方供应商修补其软件而定期更新新插件。</p></li>
+</ul>
+</li>
+<li><p><strong>合规</strong></p>
+<ul class="simple">
+<li><p>审核云基础架构：审核第三方云服务的配置。</p></li>
+<li><p>内部 PCI 网络扫描：执行内部 PCI DSS （11.2.1） 漏洞扫描。</p></li>
+<li><p>MDM 配置审核：审核移动设备管理器的配置。</p></li>
+<li><p>脱机配置审核：审核网络设备的配置。</p></li>
+<li><p>PCI 季度外部扫描：根据 PCI 的要求执行季度外部扫描。</p></li>
+<li><p>策略合规性审核：根据已知基线审核系统配置。</p></li>
+<li><p>SCAP和OVAL审核：使用 SCAP 和 OVAL 定义审核系统。</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="id2">
+<h2>扫描和策略设置<a class="headerlink" href="#id2" title="永久链接至标题">¶</a></h2>
+<ul class="simple">
+<li><p>扫描设置使您能够优化扫描中的参数，以满足特定的网络安全需求</p></li>
+<li><p>可设置项：</p>
+<ol class="simple">
+<li><p>扫描的基本设置</p></li>
+<li><p>策略的基本设置</p></li>
+<li><p>发现设置</p></li>
+<li><p>评估设置</p></li>
+<li><p>报告设置</p></li>
+<li><p>高级设置</p></li>
+</ol>
+</li>
+</ul>
+</section>
+<section id="id3">
+<h2>官方文档<a class="headerlink" href="#id3" title="永久链接至标题">¶</a></h2>
+<p><a class="reference external" href="#">https://docs.tenable.com/nessus/8_15/Content/GettingStarted.htm</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Nessus%E7%A0%B4%E8%A7%A3.html" class="btn btn-neutral float-left" title="Nessus破解" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../Awvs/index.html" class="btn btn-neutral float-right" title="Awvs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, Liulinyuan.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

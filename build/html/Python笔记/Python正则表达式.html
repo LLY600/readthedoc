@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Python正则表达式 &mdash; Liu圈圈的后宫 1.0.0 文档</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/translations.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../genindex.html" />
+    <link rel="search" title="搜索" href="../search.html" />
+    <link rel="next" title="Linux笔记" href="../Linux%E7%AC%94%E8%AE%B0/index.html" />
+    <link rel="prev" title="Python笔记" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Liu圈圈的后宫
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">内容索引:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../%E8%BD%AF%E4%BB%B6%E6%B5%8B%E8%AF%95%E4%BD%93%E7%B3%BB%E7%9F%A5%E8%AF%86/index.html">软件测试体系知识</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Python笔记</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Python正则表达式</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">核心语法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Python正则表达式的写法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">贪婪匹配与非贪婪匹配</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Linux%E7%AC%94%E8%AE%B0/index.html">Linux笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/index.html">计算机网络</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Web%E5%AE%89%E5%85%A8/index.html">Web安全</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E6%95%B0%E6%8D%AE%E5%BA%93/index.html">数据库</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E5%BE%AE%E6%9C%8D%E5%8A%A1/index.html">微服务</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E5%89%8D%E7%AB%AF%E6%B8%B8%E4%B9%90%E5%9C%BA/index.html">前端游乐场</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E5%90%8E%E7%AB%AF%E8%AE%AD%E7%BB%83%E5%9C%BA/index.html">后端训练场</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E8%87%AA%E5%8A%A8%E5%8C%96%E5%B7%A5%E5%85%B7/index.html">自动化工具</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Docker/index.html">Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../DevOps%E8%90%BD%E5%9C%B0%E7%AC%94%E8%AE%B0/index.html">DevOps落地笔记</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E7%9C%BC%E5%89%8D%E4%B8%80%E4%BA%AE%E7%9A%84%E9%93%BE%E6%8E%A5%E5%A4%87%E5%BF%98%E5%BD%95/index.html">眼前一亮的链接备忘录</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E4%BC%9A%E5%B8%A6%E5%9B%A2%E9%98%9F%E7%9A%84%E6%8A%80%E6%9C%AF%E4%BA%BA/index.html">会带团队的技术人</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E6%96%87%E6%A1%A3%E9%9B%86/index.html">文档集</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/index.html">环境搭建</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../%E5%9C%88%E5%9C%88%E7%A2%8E%E7%A2%8E%E5%BF%B5/index.html">圈圈碎碎念</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Liu圈圈的后宫</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Python笔记</a> &raquo;</li>
+      <li>Python正则表达式</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/Python笔记/Python正则表达式.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="python">
+<h1>Python正则表达式<a class="headerlink" href="#python" title="永久链接至标题">¶</a></h1>
+<section id="id1">
+<h2>核心语法<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h2>
+<ul class="simple">
+<li><p>正则表达式是一种特殊的字符串模式，用于匹配一组字符串；</p></li>
+<li><p>正则表达式包含普通字符和元字符（特殊字符）；</p></li>
+<li><p>对于其中的元字符，正则表达式赋予了它们特殊的含义；</p></li>
+<li><p>所以在进行匹配前必须先使特其“转义”，即转化为普通字符；</p></li>
+<li><p>通过反斜杠字符 \ 放在这些字符前面来实现。</p></li>
+</ul>
+<p><strong>一些常用的、易错的元字符：</strong></p>
+<ol class="simple">
+<li><p>[] 表示匹配 [] 中所有字符的任意一个，注意只有 1 个</p>
+<ul class="simple">
+<li><p>例如，我们 [0-9] 就是匹配 0、1、……、9 中任意一个数字。</p></li>
+</ul>
+</li>
+<li><p>在[]中加上一个-就表示范围</p>
+<ul class="simple">
+<li><p>例如，[a-zA-z0-9]包括了所有大小写字母，以及0到9的数字。</p></li>
+</ul>
+</li>
+<li><p>在[]内部的第一个位置加上^，表示不取[]中任意一个字符</p>
+<ul class="simple">
+<li><p>例如 [^abc] 就表示“不是 a，也不是 b，还不是 c”；</p></li>
+<li><p>关于[]常见错误用法是：用[ab|bc]来表示“ab或bc”，实际上它等同于[abc|]，得出的结果是“a或b或c或|”这4个字符（单字符）的任意一个；</p></li>
+<li><p>如果想要得到“ab 或 bc”的结果，这里可以改成 (ab|bc)。</p></li>
+</ul>
+</li>
+<li><p>需特别注意，[] 里面的特殊符有五个：[、]、-、\、^，其他都是普通字符，包括 *、.、? 等</p></li>
+<li><p>点号.匹配换行之外的任意字符</p></li>
+<li><p>换行符为\n，当我们匹配的字符之间存在不打印的\n时，就算我们的正则表达式看上去与实际字符串完全匹配，但是我们在进行操作时无法匹配</p></li>
+<li><p>\s 匹配任何空白字符，包括空格、TAB、换行符等，\S 匹配任何非空白字符</p>
+<ul class="simple">
+<li><p>\s 与 \S 互为反义；</p></li>
+<li><p>此外，我们要注意分辨 [\s\S] 与 . 的区别，[\s\S] 表示“所有”，. 表示“不包括 \n”，前者范围大于后者。</p></li>
+</ul>
+</li>
+<li><p>数量字符 *、+、?、{}</p>
+<ul class="simple">
+<li><p><em>表示它前面的字符出现 0 到无数次，例如 ab</em>c 就可以获取到“ac、abc、abbc、abbbc”等中间包含或者不包含 b 的数据；</p></li>
+<li><p>+表示这个字符出现 1 到无数次，例如 ab+c 就可以匹配到“abc、abbc、abbbc”等中间包含 b 的数据；</p></li>
+<li><p>？表示这个字符出现 0~1 次，例如 ab?c 就只能匹配到“ac”“abc”这两类数据；</p></li>
+<li><p>如果是 {3} 这种形式就代表该字符出现 3 次，如果是 {3，5} 就代表该字符出现 3~5 次。</p></li>
+</ul>
+</li>
+<li><p>| 常用于从多个数据中选多个字符</p>
+<ul class="simple">
+<li><p>前面提到的[]有选择其中一个字符功能，但假如不是一个字符，就需要用 | 分开，比如 http|ftp|svn；</p></li>
+<li><p>| 的作用域是一直往后直到遇到括号；</p></li>
+<li><p>对于源字符串 http abc ftp abc spn abc，如果使用 http|ftp|spn abc 的表达式，最后匹配的结果是“http，ftp，spn abc”；</p></li>
+<li><p>如果想得到“http abc，ftp abc，spn abc”，就需要这样写正则表达式：(?:http|ftp|spn)abc。</p></li>
+</ul>
+</li>
+<li><p>() 表示数据分界和取数据</p>
+<ul class="simple">
+<li><p>() 有一个作用是用于数据分界，这个和我们平常使用的（）差不多；</p></li>
+<li><p>() 还有一个重要的作用就是取数据，被 () 圈起来的元素会自动被分组提取出来，从左往右从 1 开始依次编号分组；</p></li>
+<li><p>如果我们想要在正则表达式中引用这个分组，可以用 \ 加上分组号，如 \1。当没有括号的时候，默认提取整个符合正则表达式的字符。</p></li>
+</ul>
+</li>
+<li><p>?:分界作用</p>
+<ul class="simple">
+<li><p>在上面 (?:http|ftp|spn)abc 的例子中，如果我们不加上 ?: ，最后就会提取“http，ftp，spn”出来，而不是“http abc，ftp abc，spn abc”；</p></li>
+<li><p>到这儿，应该已经知道 ?: 的作用了，就是不提取 () 中的元素，使 () 仅仅起分界作用。</p></li>
+</ul>
+</li>
+<li><p>^、$、\b、\B</p>
+<ul class="simple">
+<li><p>定位符 ^ 表示一个字符串的开始位置；</p></li>
+<li><p>$ 表示一个字符串结束的位置；</p></li>
+<li><p>\b 表示单词之间的位置，例如单词间的空格；</p></li>
+<li><p>\B 表示非单词间的位置。</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="id2">
+<h2>Python正则表达式的写法<a class="headerlink" href="#id2" title="永久链接至标题">¶</a></h2>
+<p><strong>正则表达式的编写要领</strong></p>
+<ol class="simple">
+<li><p>定锚点</p>
+<ul class="simple">
+<li><p>需要的数据位于”xxx”的后面，所以将”xxx”作为一个锚点，意思就是我们需要的数据就在这个位置；</p></li>
+<li><p>锚点后面就是目标数据，所以将目标数据加上一个小括号 ()，表示这里是需要获取的地方，括号内的内容将进行匹配并返回；</p></li>
+<li><p>如src=”(.*?)”。</p></li>
+</ul>
+</li>
+<li><p>去噪点</p>
+<ul class="simple">
+<li><p>字符串中剩余的数据自然是多余的，同样使用正则表达式来表示这些多余的信息，但是不使用小括号 ()，这样就不会将这部分信息提取出来；</p></li>
+<li><p>于是，得到正则表达式 &lt;img.<em>?src=”(.</em>?)”&gt;。</p></li>
+</ul>
+</li>
+<li><p>取数据</p>
+<ul class="simple">
+<li><p>得到了总的正则表达式，就可以将其代入到字符串中获取数据了。</p></li>
+</ul>
+</li>
+</ol>
+<p><strong>正则表达式在 Python 中的应用场景</strong></p>
+<ul class="simple">
+<li><p>想要在Python中使用正则表达式，首先要使用import re语句导入re模块</p></li>
+</ul>
+<ol>
+<li><p>生成</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>举例：
+strs=r&#39;&lt;imgalt=&quot;loading&quot;class=&quot;lazyloadloaded&quot;src=&quot;https://th.wallhaven.cc/small/e7/e76pew.jpg&quot;&gt;&#39;
+reStr = r&#39;&lt;img.*?src=&quot;(.*?)&quot;&gt;’
+pattern = re.compile(reStr)
+result = re.findall(pattern，strs）
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>re.compile这个函数将会返回一个具有正则表达式匹配规则的匹配模式pattern；</p></li>
+<li><p>这个pattern才真正具有从字符串strs中得到相应数据的功能；</p></li>
+<li><p>compile 函数的作用是让计算机知道这个字符串是一个符合规则的正则表达式，而不是一个普通的字符串；</p></li>
+<li><p>如果不使用re.compile函数将reStr普通字符串转换为pattern正则匹配模式，将这一行代码注释掉，直接使用reStr这一字符串进行匹配，也能够进行匹配；</p></li>
+<li><p>这是因为findall函数在执行时，自动将reStr字符串转换成了正则表达式；</p></li>
+<li><p>使用 compile 函数的目的是提高效率；</p></li>
+<li><p>因为经过 compile 函数的编译后，pattern 就是一个正则表达式了，在今后使用时就不再需要编译了；findall可以直接进行匹配过程；</p></li>
+<li><p>如果不经过compile 函数 ，findall 在执行时，就要每次都先将reStr字符串转换成正则表达式，再进行匹配过程。</p></li>
+</ul>
+</li>
+<li><p>定位</p>
+<ul class="simple">
+<li><p>定位就是获取目标数据的位置信息；</p></li>
+<li><p>这里有两个函数供我们使用，一个是 match 函数，另一个是 search 函数；</p></li>
+<li><p>search(pattern,string)</p></li>
+<li><p>match(pattern,string)</p></li>
+<li><p>其中，Pattern 是正则表达式；string 是需要匹配的字符串；</p></li>
+<li><p>这两个函数都是从字符串中匹配一个数据，即使字符串中有多个符合匹配的数据，函数还是只返回第一个匹配到的数据及其位置信息；</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+
+	<span class="s2">&quot;UserAgent&quot;</span><span class="p">:</span><span class="s2">&quot;Mozilla/5.0(WindowsNT10.0;Win64;x64)AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36&quot;</span>
+
+<span class="p">}</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://wallhaven.cc/toplist?page=1&quot;</span>
+<span class="n">resp</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+<span class="n">strs</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">text</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span><span class="n">strs</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="n">re</span><span class="o">.</span><span class="n">Match</span> <span class="nb">object</span><span class="p">;</span><span class="n">span</span><span class="o">=</span><span class="p">(</span><span class="mi">22601</span><span class="p">,</span><span class="mi">22644</span><span class="p">),</span><span class="n">match</span><span class="o">=</span><span class="s1">&#39;https://th.wallhaven.cc/small/pk/pkgkkp.jpg&#39;</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>search 函数只获取了众多图片数据的第一个匹配到的数据;</p></li>
+<li><p>若是使用函数 match 进行匹配，得到的结果却为空;</p></li>
+<li><p>因为match 函数默认是从字符串开头进行匹配，若是开头处就与正则表达式不匹配的话，返回结果就直接为空;</p></li>
+<li><p>而search函数是从头到尾进行匹配，当成功匹配到数据就返回结果，若是从头到尾都没有匹配的数据，才返回空。</p></li>
+</ul>
+</li>
+<li><p>显示</p>
+<ul class="simple">
+<li><p>findall函数可以将所有匹配到的数据全部返回</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span><span class="n">strs</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>还有一个finditer函数，其功能与findall函数是一样的，也是全局匹配，获取所有匹配的结果；</p></li>
+<li><p>只是它们返回的数据类型不同，findall返回的是一个列表数据类型，而finditer是返回一个迭代器类型。</p></li>
+</ul>
+</li>
+<li><p>替换</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span><span class="n">repl</span><span class="p">,</span><span class="n">string</span><span class="p">,</span><span class="n">count</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>其中，repl 表示替换的字符串，count 表示开始位置。</p>
+</li>
+<li><p>分割</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">split</span><span class="p">(</span><span class="n">pattern</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>将我们原本需要做几次才能完成的任务，简化为一次就完成。</p>
+</li>
+</ol>
+</section>
+<section id="id3">
+<h2>贪婪匹配与非贪婪匹配<a class="headerlink" href="#id3" title="永久链接至标题">¶</a></h2>
+<ul class="simple">
+<li><p>元字符.表示任意字符（换行符除外），元字符* 表示前一个字符重复出现 0 次或者是多次，所以我们使用.*就可以匹配任意长度的任意字符了，就是贪婪匹配；</p></li>
+<li><p>.*?连在一起，就是非贪婪匹配。</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Python笔记" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../Linux%E7%AC%94%E8%AE%B0/index.html" class="btn btn-neutral float-right" title="Linux笔记" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, Liulinyuan.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
