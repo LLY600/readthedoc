@@ -6,6 +6,8 @@
 	
     SQL注入/index
     文件上传/index
+    服务端请求伪造SSRF/index
+    反序列化漏洞/index
     WEB SERVER配置安全/index
     WEB框架漏洞/index
     访问控制/index

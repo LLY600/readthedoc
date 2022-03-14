@@ -19,7 +19,7 @@
     <script src="../../../../_static/js/theme.js"></script>
     <link rel="index" title="索引" href="../../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../../search.html" />
-    <link rel="next" title="跨站请求伪造CSRF" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html" />
+    <link rel="next" title="原理" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html" />
     <link rel="prev" title="跨站脚本XSS" href="../%E8%B7%A8%E7%AB%99%E8%84%9A%E6%9C%ACXSS/%E8%B7%A8%E7%AB%99%E8%84%9A%E6%9C%ACXSS.html" /> 
 </head>
 
@@ -109,10 +109,14 @@
 <h1>跨站请求伪造CSRF<a class="headerlink" href="#csrf" title="永久链接至标题">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html">跨站请求伪造CSRF</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html#id1">定义</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html">原理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html#id2">攻击过程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html#csrf">CSRF分类</a></li>
+<li class="toctree-l1"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html#id3">CSRF攻击，黑客能做什么</a></li>
+<li class="toctree-l1"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html#id4">CSRF防护</a></li>
+<li class="toctree-l1"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html#id5">CSRF测试思路</a></li>
+<li class="toctree-l1"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html#id6">工具推荐</a></li>
+<li class="toctree-l1"><a class="reference internal" href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html#id7">靶场推荐</a></li>
 </ul>
 </div>
 </section>
@@ -122,7 +126,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="../%E8%B7%A8%E7%AB%99%E8%84%9A%E6%9C%ACXSS/%E8%B7%A8%E7%AB%99%E8%84%9A%E6%9C%ACXSS.html" class="btn btn-neutral float-left" title="跨站脚本XSS" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html" class="btn btn-neutral float-right" title="跨站请求伪造CSRF" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="%E8%B7%A8%E7%AB%99%E8%AF%B7%E6%B1%82%E4%BC%AA%E9%80%A0CSRF.html" class="btn btn-neutral float-right" title="原理" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

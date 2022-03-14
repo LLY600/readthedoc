@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>跨站请求伪造CSRF &mdash; Liu圈圈的后宫 1.0.0 文档</title>
+  <title>原理 &mdash; Liu圈圈的后宫 1.0.0 文档</title>
       <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -96,7 +96,7 @@
           <li><a href="../../index.html">常见漏洞攻防</a> &raquo;</li>
           <li><a href="../index.html">客户端脚本安全</a> &raquo;</li>
           <li><a href="index.html">跨站请求伪造CSRF</a> &raquo;</li>
-      <li>跨站请求伪造CSRF</li>
+      <li>原理</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../../_sources/Web安全/常见漏洞攻防/客户端脚本安全/跨站请求伪造/跨站请求伪造CSRF.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -106,28 +106,128 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="csrf">
-<h1>跨站请求伪造CSRF<a class="headerlink" href="#csrf" title="永久链接至标题">¶</a></h1>
-<section id="id1">
-<h2>定义<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h2>
-<p>数据包中的cookie的值是浏览器从本地存储中取出，并自动填充到数据包中
-如果攻击者控制了用户浏览器并窃取了cookie
-浏览器会自动完成cookie的填充，目标网站误认为该数据包是管理员发出的，会以管理员的权限进行相关操作</p>
-<p><strong>CSRF示例</strong>
-1、用户登录信任网站A
-2、网站A在用户处生成cookie
-3、如果用户在未登出浏览器情况下，访问了恶意网站B
-4、恶意网站B请求访问网站A
-5、根据恶意网站B的请求，浏览器带着步骤2生成的cookie访问网站A
-6、网站A不知道步骤5中的请求是用户还是恶意网站B发出的，由于浏览器自动带上cookie，会根据权限处理请求</p>
-<p><strong>防范</strong>
-添加http referer，表明来源
-使用token
-csrf成功的原因在于站点对于用户身份的辨别依赖于cookie
-token是应用程序添加到数据包中的
-cookie是浏览器添加到数据包中的
-只在内链中添加token</p>
+  <section id="id1">
+<h1>原理<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h1>
+<ul class="simple">
+<li><p>我们几乎每天都会使用到浏览器，我们的信息也会被浏览器“保存”。</p></li>
+<li><p>浏览器如何保存你的身份信息：</p>
+<ul>
+<li><p>当我们访问一个web页面的时候，并不是我们自己去获取页面信息，而是浏览器去获取这些信息，并将它们进行了展示。</p></li>
+<li><p>这就说明，你允许浏览器代表你去和服务器进行交互。</p></li>
+<li><p>为了准确代表你的身份，浏览器通常会在Cookie中存储一些必要的身份信息。</p></li>
+<li><p>所以，我们访问一个网页，只需首次访问的时候登录就可以了。</p></li>
+</ul>
+</li>
+<li><p>从用户体验上来说，非常方便。但是，黑客正是利用这一点，编写恶意的js脚本，通过“钓鱼”的方式诱导你访问。</p></li>
+<li><p>然后黑客通过js脚本获取你保存在网页的身份信息，执行黑客定义的操作。</p></li>
+<li><p>而这一切，你是无感知的，这就是跨站请求伪造（CSRF）。</p></li>
+</ul>
 </section>
+<section id="id2">
+<h1>攻击过程<a class="headerlink" href="#id2" title="永久链接至标题">¶</a></h1>
+<ul class="simple">
+<li><p>假如黑客通过抓包找到了银行转账接口，如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>接口地址：http://bank.com/transfer 
+HTTP 方法：POST
+接口参数：to（目标账户）、amount（金额）
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>在转账之前，你肯定进行了一次登录。假设这个接口参数中不再需要其他任何身份认证相关的信息。</p></li>
+<li><p>如此，这个接口满足了 CSRF攻击的基本条件：</p>
+<ul>
+<li><p>使用Cookie进行认证；</p></li>
+<li><p>参数中不包含其他任何隐私信息。</p></li>
+</ul>
+</li>
+<li><p>那么黑客可以构造一个如下的漏洞利用空白网页，假设地址为http://hacker.com/exploit.html，生成短网址（如https://ock.cn/8q639），通过邮件、社交平台、即时消息等途经发给受害者（短网址生成：https://ock.cn/）</p></li>
+<li><p>exploit.html 利用代码如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">html</span><span class="o">&gt;</span>
+  <span class="o">&lt;</span><span class="n">body</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">form</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;nomoney&quot;</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;http://bank.com/transfer&quot;</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;POST&quot;</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nb">input</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;hidden&quot;</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;to&quot;</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;hacker&quot;</span> <span class="o">/&gt;</span>
+      <span class="o">&lt;</span><span class="nb">input</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;hidden&quot;</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;10000&quot;</span> <span class="o">/&gt;</span>
+    <span class="o">&lt;/</span><span class="n">form</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">script</span><span class="o">&gt;</span>
+      <span class="n">document</span><span class="o">.</span><span class="n">nomoney</span><span class="o">.</span><span class="n">submit</span><span class="p">();</span>
+    <span class="o">&lt;/</span><span class="n">script</span><span class="o">&gt;</span>
+  <span class="o">&lt;/</span><span class="n">body</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">html</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>在HTML中，script标签内的 JavaScript 脚本会在打开网页的时候自动执行。</p></li>
+<li><p>因此，一旦用户访问了这个https://ock.cn/8q639页面，它就会自动提交 form 表单，向http://bank.com/transfer这个接口发起一个 POST 请求。</p></li>
+<li><p>其中，to 和 amount 这两个参数，代表着用户向黑客的账号转账 10000 元。</p></li>
+<li><p>只要这个用户之前登录过 bank.com，并且账户余额大于10000元，那么黑客就能够成功地收到这 10000 元的转账了。</p></li>
+<li><p>在这个网页中，input的标签带有“hidden”属性，所以这整个过程对于用户来说都是不可见的。</p></li>
+</ul>
+</section>
+<section id="csrf">
+<h1>CSRF分类<a class="headerlink" href="#csrf" title="永久链接至标题">¶</a></h1>
+<ul class="simple">
+<li><p>从漏洞利用角度来分类的话，CSRF 可以分为 CSRF 读与 CSRF 写。</p></li>
+</ul>
+<ol class="simple">
+<li><p>CSRF读</p>
+<ul class="simple">
+<li><p>通过伪造请求来获取返回的敏感信息，比如用户资料；常见的就是 JSON 劫持（详见下文），以及利用 Flash API 加载页面获取敏感信息。</p></li>
+</ul>
+</li>
+<li><p>CSRF写</p>
+<ul class="simple">
+<li><p>通过伪造请求去修改网站数据，比如修改密码、发表文章、发送消息等操作。</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="id3">
+<h1>CSRF攻击，黑客能做什么<a class="headerlink" href="#id3" title="永久链接至标题">¶</a></h1>
+<ul class="simple">
+<li><p>CSRF 也可以仿冒用户去进行一些功能操作的请求，比如修改密码、转账等等，相当于绕过身份认证，进行未授权的操作</p></li>
+</ul>
+</section>
+<section id="id4">
+<h1>CSRF防护<a class="headerlink" href="#id4" title="永久链接至标题">¶</a></h1>
+<ol class="simple">
+<li><p>CSRFToken</p>
+<ul class="simple">
+<li><p>通过前面的例子，我们知道，CSRF 是通过自动提交表单的形式来发起攻击的；</p></li>
+<li><p>因此，我们只需要在这个接口中，加入一个黑客无法猜到的参数，就可以有效防止 CSRF了。</p></li>
+<li><p>因为 CSRF Token 是每次用户正常访问页面时，服务端随机生成返回给浏览器的。</p></li>
+<li><p>所以，每一次正常的转账接口调用，都会携带不同的 CSRF Token。黑客没有办法进行提前猜测，也就没有办法构造出正确的表单了。</p></li>
+</ul>
+</li>
+<li><p>通过二次验证（支付密码、验证码等）</p>
+<ul class="simple">
+<li><p>当你进行各类支付操作的时候，通常会要求你输入支付密码。你可能会觉得奇怪，明明自己已经登录了，为什么还需要输入一个独立的支付密码呢？</p></li>
+<li><p>这其实和 CSRF Token 的原理一样：这个独立的支付密码是需要用户输入的，只存在于用户的记忆中，因此，也是黑客无法获取到的参数。</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="id5">
+<h1>CSRF测试思路<a class="headerlink" href="#id5" title="永久链接至标题">¶</a></h1>
+<ul class="simple">
+<li><p>抓包记录正常的 HTTP 请求；</p></li>
+<li><p>分析 HTTP 请求参数是否可预测，以及相应的用途；</p></li>
+<li><p>去掉或更改 referer 为第三方站点，然后重放请求；</p></li>
+<li><p>判断是否达到与正常请求的同等效果，若是则可能存在 CSRF 漏洞，反之则不存在。</p></li>
+</ul>
+</section>
+<section id="id6">
+<h1>工具推荐<a class="headerlink" href="#id6" title="永久链接至标题">¶</a></h1>
+<ul class="simple">
+<li><p>目前没有特别好的自动化 CSRF 检测工具，大多是一些半自动的辅助类工具，比如 BurpSuite 上的 CSRF PoC 生成功能</p></li>
+</ul>
+</section>
+<section id="id7">
+<h1>靶场推荐<a class="headerlink" href="#id7" title="永久链接至标题">¶</a></h1>
+<ol class="simple">
+<li><p>DVWA</p></li>
+</ol>
 </section>
 
 

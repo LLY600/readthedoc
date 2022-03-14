@@ -6,6 +6,6 @@
 	
     浏览器安全/index
     跨站脚本XSS/index
-    跨站请求伪造/index
+    跨站请求伪造CSRF/index
     点击劫持/index
     网页钓鱼/index
