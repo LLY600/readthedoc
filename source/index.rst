@@ -19,6 +19,8 @@ Welcome to Liu圈圈的后宫~ [手动笔芯]
     Docker/index
     DevOps落地笔记/index
     Git版本管理/index
+    单元测试/index
+    性能测试/index
     开源前哨/index
     眼前一亮的链接备忘录/index
     会带团队的技术人/index

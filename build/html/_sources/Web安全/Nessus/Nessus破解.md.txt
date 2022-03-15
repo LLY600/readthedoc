@@ -74,7 +74,9 @@ Nessus破解
 	- 安装中文插件：apt-get install ttf-wqy-microhei ttf-wqy-zenhei xfonts-wqy
 	- 配置：dpkg-reconfigure locales
 	- 然后空格键选中 en_US.UTF-8、zh_CN.GBK、zh_CN.UTF-8三个模式为*，然后enter
-	- 确定后，将zh_CN.UTF-8 选为默认，最后reboot重启
+	- 确定后，将zh_CN.UTF-8 选为默认，
+	- 配置默认浏览器：update-alternatives --config x-www-browser
+	- 最后reboot重启
 	
 1. 总结
 	- 如果遇到无法破解还是0~16IP限制，请检查PLUGIN_SET值为前面update all-2.0.tar.gz更新获得的值！

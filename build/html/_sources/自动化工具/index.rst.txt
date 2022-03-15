@@ -6,4 +6,6 @@
 
     Selenium/index
     Cypress/index
+    Charles/index
+    BurpSuite/index
 
