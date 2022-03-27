@@ -20,9 +20,9 @@ from recommonmark.parser import CommonMarkParser
 
 # -- Project information -----------------------------------------------------
 
-project = 'Liu圈圈的后宫'
-copyright = '2022, Liulinyuan'
-author = 'Liulinyuan'
+project = '怪正经的居民'
+copyright = '2022, Liu圈圈'
+author = 'Liu圈圈'
 
 # The full version, including alpha/beta/rc tags
 release = '1.0.0'
