@@ -7,3 +7,4 @@
     交换机流量镜像
     Linux三剑客
     Linux快捷键
+    Linux环境变量配置
