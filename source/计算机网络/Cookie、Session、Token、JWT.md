@@ -1,3 +1,5 @@
+Cookie、Session、Token、JWT
+============
 #### 什么是认证
 - 认证（Authentication）通俗地讲就是验证当前用户的身份
 #### 什么是授权
@@ -9,66 +11,67 @@
 #### 什么是cookie
 1. HTTP 是无状态的协议（对于事务处理没有记忆能力，每次客户端和服务端会话完成时，服务端不会保存任何会话信息）：每个请求都是完全独立的，服务端无法确认当前访问者的身份信息，无法分辨上一次的请求发送者和这一次的发送者是不是同一个人。所以服务器与浏览器为了进行会话跟踪（知道是谁在访问我），就必须主动的去维护一个状态，这个状态用于告知服务端前后两个请求是否来自同一浏览器。而这个状态需要通过 cookie 或者 session 去实现。
 2. cookie 存储在客户端： cookie 是服务器发送到用户浏览器并保存在本地的一小块数据，它会在浏览器下次向同一服务器再发起请求时被携带并发送到服务器上。
-1. - cookie 是不可跨域的： 每个 cookie 都会绑定单一的域名，无法在别的域名下获取使用，一级域名和二级域名之间是允许共享使用的（靠的是 domain）。
-1. - cookie的重要属性
-	- name=value
+1. cookie 是不可跨域的： 每个 cookie 都会绑定单一的域名，无法在别的域名下获取使用，一级域名和二级域名之间是允许共享使用的（靠的是 domain）。
+1. cookie的重要属性
+	**name=value**
 	- 键值对，设置Cookie 的名称及相对应的值，都必须是字符串类型；如果值为 Unicode 字符，需要为字符编码；如果值为二进制数据，则需要使用BASE64 编码。
 	
-	- domain 
+	**domain** 
 	- 指定cookie 所属域名，默认是当前域名 
 
-	- path
+	**path**
 	- 指定 cookie 在哪个路径(路由)下生效，默认是'""。
 	- 如果设置为/abc，则只有 /abc下的路由可以访问到该cookie，如:/abc/read。
 	
-	- maxAge
+	**maxAge**
 	- cookie 失效的时间，单位秒。如果为整数，则该cookie 在maxAge 秒后失效。如果为负数，该cookie 为临时 cookie ，关闭浏览器即失效，浏览器也不会以任何形式保存该cookie。如果为0，表示删除该cookie。默认为-1。 -比 expires 好用。
 	
-	- expires
+	**expires**
 	- 过期时间，在设置的某个时间点后该 cookie 就会失效。一般浏览器的 cookie 都是默认储存的，当关闭浏览器结束这个会话的时候，这个cookie 也就会被删除
 	
-	- secure
+	**secure**
 	- 该 cookie 是否仅被使用安全协议传输。安全协议有HTTPS，SSL等，在网络上传输数据之前先将数据加密。默认为false。 当 secure 值为true时，cookie在HTTP中是无效，在HTTPS 中才有效。
 
-	- httpOnly
+	** httpOnly**
 	- 如果给某个cookie 设置了 httpOnly 属性，则无法通过JS 脚本读取到该 cookie 的信息。但还是能通过Application中手动修改cookie，所以只是在一定程度上可以防止 XSS 攻击，不是绝对的安全
 
 #### 什么是session
-1. session 是另一种记录服务器和客户端会话状态的机制；
-2. session 是基于cookie 实现的，session 存储在服务器端，sessionId 会被存储到客户端的cookie 中
-3. session 认证流程
-	- 用户第一次请求服务器的时候，服务器根据用户提交的相关信息，创建对应的 Session
-	- 请求返回时将此 Session 的唯一标识信息 SessionID 返回给浏览器
-	- 浏览器接收到服务器返回的 SessionID 信息后，会将此信息存入到 Cookie 中，同时 Cookie 记录此 SessionID 属于哪个域名
-	- 当用户第二次访问服务器的时候，请求会自动判断此域名下是否存在 Cookie 信息，如果存在自动将 Cookie 信息也发送给服务端，服务端会从 Cookie 中获取 SessionID，再根据 SessionID 查找对应的 Session 信息，如果没有找到说明用户没有登录或者登录失效，如果找到 Session 证明用户已经登录可执行后面操作
+- session 是另一种记录服务器和客户端会话状态的机制；
+- session 是基于cookie 实现的，session 存储在服务器端，sessionId 会被存储到客户端的cookie 中
+- session 认证流程
+	1. 用户第一次请求服务器的时候，服务器根据用户提交的相关信息，创建对应的 Session
+	2. 请求返回时将此 Session 的唯一标识信息 SessionID 返回给浏览器
+	3. 浏览器接收到服务器返回的 SessionID 信息后，会将此信息存入到 Cookie 中，同时 Cookie 记录此 SessionID 属于哪个域名
+	4. 当用户第二次访问服务器的时候，请求会自动判断此域名下是否存在 Cookie 信息，如果存在自动将 Cookie 信息也发送给服务端，服务端会从 Cookie 中获取 SessionID，再根据 SessionID 查找对应的 Session 信息，如果没有找到说明用户没有登录或者登录失效，如果找到 Session 证明用户已经登录可执行后面操作
 	- 根据以上流程可知，SessionID 是连接 Cookie 和 Session 的一道桥梁，大部分系统也是根据此原理来验证用户登录状态
-1. session缺点
+- session缺点
 	- Session 机制有个缺点，比如 A 服务器存储了 Session，就是做了负载均衡后，假如一段时间内 A 的访问量激增，会转发到 B 进行访问，但是 B 服务器并没有存储 A 的 Session，会导致 Session 的失效
-1. Cookie 和 Session 的区别
-	- Session 和 Cookie 的主要目的就是为了弥补 HTTP 的无状态特性
-	- 安全性： Session 比 Cookie 安全，Session 是存储在服务器端的，Cookie 是存储在客户端的。
-	- 存取值的类型不同：Cookie 只支持存字符串数据，想要设置其他类型的数据，需要将其转换成字符串，Session 可以存任意数据类型。
-	- 有效期不同： Cookie 可设置为长时间保持，比如我们经常使用的默认登录功能，Session 一般失效时间较短，客户端关闭（默认情况下）或者 Session 超时都会失效。
-	- 存储大小不同： 单个 Cookie 保存的数据不能超过 4K，Session 可存储数据远高于 Cookie，但是当访问量过多，会占用过多的服务器资源。
+- Cookie 和 Session 的区别
+	1. Session 和 Cookie 的主要目的就是为了弥补 HTTP 的无状态特性
+	2. 安全性： Session 比 Cookie 安全，Session 是存储在服务器端的，Cookie 是存储在客户端的。
+	3. 存取值的类型不同：Cookie 只支持存字符串数据，想要设置其他类型的数据，需要将其转换成字符串，Session 可以存任意数据类型。
+	4. 有效期不同： Cookie 可设置为长时间保持，比如我们经常使用的默认登录功能，Session 一般失效时间较短，客户端关闭（默认情况下）或者 Session 超时都会失效。
+	5. 存储大小不同： 单个 Cookie 保存的数据不能超过 4K，Session 可存储数据远高于 Cookie，但是当访问量过多，会占用过多的服务器资源。
 #### 什么是token
 1. Acesss Token
 	- 访问资源接口（API）时所需要的资源凭证
 	- 简单 token 的组成： 
-		1. uid(用户唯一的身份标识)
-		2. time(当前时间的时间戳)
-		3. sign（签名，token 的前几位以哈希算法压缩成的一定长度的十六进制字符串）
+		- uid(用户唯一的身份标识)
+		- time(当前时间的时间戳)
+		- sign（签名，token 的前几位以哈希算法压缩成的一定长度的十六进制字符串）
 	- 特点：
-		1. 服务端无状态化、可扩展性好
-		2. 支持移动端设备
-		3. 安全
-		4. 支持跨程序调用
+		- 服务端无状态化、可扩展性好
+		- 支持移动端设备
+		- 安全
+		- 支持跨程序调用
 	- token 的身份验证流程：
-		1. 客户端使用用户名跟密码请求登录；
-		2. 服务端收到请求，去验证用户名与密码；
-		3. 验证成功后，服务端会签发一个 token 并把这个 token 发送给客户端；
-		4. 客户端收到 token 以后，会把它存储起来，比如放在 cookie 里或者 localStorage 里；
-		5. 客户端每次向服务端请求资源的时候需要带着服务端签发的 token；
-		6. 服务端收到请求，然后去验证客户端请求里面带着的 token ，如果验证成功，就向客户端返回请求的数据；
+		- 客户端使用用户名跟密码请求登录；
+		- 服务端收到请求，去验证用户名与密码；
+		- 验证成功后，服务端会签发一个 token 并把这个 token 发送给客户端；
+		- 客户端收到 token 以后，会把它存储起来，比如放在 cookie 里或者 localStorage 里；
+		- 客户端每次向服务端请求资源的时候需要带着服务端签发的 token；
+		- 服务端收到请求，然后去验证客户端请求里面带着的 token ，如果验证成功，就向客户端返回请求的数据；
+		- 
 		- 每一次请求都需要携带 token，需要把 token 放到 HTTP 的 Header 里；
 		- 基于 token 的用户认证是一种服务端无状态的认证方式，服务端不用存放 token 数据。用解析 token 的计算时间换取 session 的存储空间，从而减轻服务器的压力，减少频繁的查询数据库；
 		- token 完全由应用管理，所以它可以避开同源策略
@@ -89,10 +92,10 @@
 - 生成 JWT
 	- https://jwt.io/
 	- https://www.jsonwebtoken.io/
-1. JWT 认证流程：
-	1. 用户输入用户名/密码登录，服务端认证成功后，会返回给客户端一个 JWT
-	2. 客户端将 token 保存到本地（通常使用 localstorage，也可以使用 cookie）
-	3. 当用户希望访问一个受保护的路由或者资源的时候，需要请求头的 Authorization 字段中使用Bearer 模式添加 JWT，其内容看起来是下面这样：
+- JWT 认证流程：
+	- 用户输入用户名/密码登录，服务端认证成功后，会返回给客户端一个 JWT
+	- 客户端将 token 保存到本地（通常使用 localstorage，也可以使用 cookie）
+	- 当用户希望访问一个受保护的路由或者资源的时候，需要请求头的 Authorization 字段中使用Bearer 模式添加 JWT，其内容看起来是下面这样：
 	```
 	Authorization: Bearer <token>
 	```
@@ -100,7 +103,7 @@
 	- 因为 JWT 是自包含的（内部包含了一些会话信息），因此减少了需要查询数据库的需要；
 	- 因为 JWT 并不使用 Cookie 的，所以你可以使用任何域名提供你的 API 服务而不需要担心跨域资源共享问题（CORS）；
 	- 因为用户的状态不再存储在服务端的内存中，所以这是一种无状态的认证机制
-1. JWT 的使用方式
+- JWT 的使用方式
 	- 客户端收到服务器返回的 JWT，可以储存在 Cookie 里面，也可以储存在 localStorage
 	- 方式一
 		- 当用户希望访问一个受保护的路由或者资源的时候，可以把它放在 Cookie 里面自动发送，但是这样不能跨域，所以更好的做法是放在 HTTP 请求头信息的 Authorization 字段里，使用 Bearer 模式添加 JWT
@@ -119,14 +122,14 @@
 	- 方式三
 		- 通过 URL传输，http://www.example.com/user?token=xxx
 1. Token 和 JWT 的区别
-- 相同：
-	- 都是访问资源的令牌
-	- 都可以记录用户的信息
-	- 都是使服务端无状态化
-	- 都是只有验证成功后，客户端才能访问服务端上受保护的资源
-- 区别：
-	- Token：服务端验证客户端发送过来的 Token 时，还需要查询数据库获取用户信息，然后验证 Token 是否有效。
-	- JWT：将 Token 和 Payload 加密后存储于客户端，服务端只需要使用密钥解密进行校验（校验也是 JWT 自己实现的）即可，不需要查询或者减少查询数据库，因为 JWT 自包含了用户信息和加密的数据
+	- 相同：
+		- 都是访问资源的令牌
+		- 都可以记录用户的信息
+		- 都是使服务端无状态化
+		- 都是只有验证成功后，客户端才能访问服务端上受保护的资源
+	- 区别：
+		- Token：服务端验证客户端发送过来的 Token 时，还需要查询数据库获取用户信息，然后验证 Token 是否有效。
+		- JWT：将 Token 和 Payload 加密后存储于客户端，服务端只需要使用密钥解密进行校验（校验也是 JWT 自己实现的）即可，不需要查询或者减少查询数据库，因为 JWT 自包含了用户信息和加密的数据
 #### 常见的前后端鉴权方式
 1. Session-Cookie；
 2. Token 验证（包括 JWT，SSO）；
@@ -193,7 +196,7 @@
 			- 然而浏览器从来不会主动在关闭之前通知服务器它将要关闭，因此服务器根本不会有机会知道浏览器已经关闭，之所以会有这种错觉，是大部分 session 机制都使用会话 cookie 来保存 session id，而关闭浏览器后这个 session id 就消失了，再次连接服务器时也就无法找到原来的 session。
 			- 如果服务器设置的 cookie 被保存在硬盘上，或者使用某种手段改写浏览器发出的 HTTP 请求头，把原来的 session id 发送给服务器，则再次打开浏览器仍然能够打开原来的 session。
 			- 恰恰是由于关闭浏览器不会导致 session 被删除，迫使服务器为 session 设置了一个失效时间，当距离客户端上一次使用 session 的时间超过这个失效时间时，服务器就认为客户端已经停止了活动，才会把 session 删除以节省存储空间
-参考：
-[https://mp.weixin.qq.com/s/xzv44ibRdq4zbu9rl-_AvQ]()
-[https://mp.weixin.qq.com/s/DeERrIodO2WUT5ZevOQ3bA]()
-[https://mp.weixin.qq.com/s/i-xmWec09MCIK_AOBzHZdw]()
+#### 参考链接
+1. [https://mp.weixin.qq.com/s/xzv44ibRdq4zbu9rl-_AvQ]()
+2. [https://mp.weixin.qq.com/s/DeERrIodO2WUT5ZevOQ3bA]()
+3. [https://mp.weixin.qq.com/s/i-xmWec09MCIK_AOBzHZdw]()
