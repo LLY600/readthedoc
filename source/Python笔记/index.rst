@@ -5,3 +5,4 @@ Python笔记
     :maxdepth: 2
 
     Python正则表达式
+    Python优化提速小技巧
