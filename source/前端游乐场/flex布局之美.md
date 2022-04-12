@@ -11,8 +11,8 @@ Flex布局之美
 		- 父容器（container)
 		- 子容器（item）
 1. 轴
-	![](main_axis.jpg)
 	- 轴包括主轴和交叉轴
+	![](main_axis.jpg)
 	- 默认情况下，主轴的方向是从左向右的，交叉轴垂直于主轴，逆时针方向90度，那么接下来我们看flex-direction是如何决定主轴的。
 	- 交叉轴是由主轴决定的，主轴又是由flex-direction决定的。
 	- flex-direction属性设置在父容器上，才可以生效。
