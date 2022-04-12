@@ -325,12 +325,16 @@ object-fit: contain
 mix-blend-mode: multiply
 ```
 #### 选择最佳的值
-- 主要介绍clamp()函数，接受三个参数，即 clamp(MIN, VAL, MAX)，其中 MIN 表示最小值，VAL 表示首选值，MAX 表示最大值。它们之间：
-- 如果 VAL 在 MIN 和 MAX 之间，则使用 VAL 作为函数的返回值。
-- 如果 VAL 大于 MAX，则使用 MAX 作为函数的返回值。
-- 如果 VAL 小于 MIN，则使用 MIN 作为函数的返回值
-```
-width: clamp(100px, 50vw, 500px)
-```
+1. clamp()函数
+	- clamp()函数接受三个参数，即 clamp(MIN, VAL, MAX)，其中 MIN 表示最小值，VAL 表示首选值，MAX 表示最大值。它们之间：
+	- 如果 VAL 在 MIN 和 MAX 之间，则使用 VAL 作为函数的返回值。
+	- 如果 VAL 大于 MAX，则使用 MAX 作为函数的返回值。
+	- 如果 VAL 小于 MIN，则使用 MIN 作为函数的返回值
+	```
+	width: clamp(100px, 50vw, 500px)
+	```
+1. 保持宽高比
+	- aspect-ratio: width / height
 #### 参考
 - [https://mp.weixin.qq.com/s/9f4UaZWzYSJB_ZdwhS3A3A](https://mp.weixin.qq.com/s/9f4UaZWzYSJB_ZdwhS3A3A)
+- [https://mp.weixin.qq.com/s/Siay7CnzTli5S965owK8NQ](https://mp.weixin.qq.com/s/Siay7CnzTli5S965owK8NQ)
