@@ -35,7 +35,6 @@ CSS布局技巧
 	place-items: center
 	```
 #### 等高布局
-- 在Flexbox和Grid布局模块中，实现等高布局非常的简单
 1. Flexbox布局
 	- 在容器上显式设置了 display 的值为 flex 或 inline-flex，该容器的所有子元素的高度都相等，因为容器的 align-items 的默认值为 stretch（拉伸）
 	```
@@ -48,7 +47,7 @@ CSS布局技巧
 	```
 #### Sticky Footer
 1. stickky footer图例
-	![file:///D:/readthedoc/readthedocs/source/前端游乐场/StickyFooter.png](StickyFooter.png)
+	![](StickyFooter.png)
 2. Flexbox布局实现
 	```
 	  <div class="body">
@@ -71,7 +70,7 @@ CSS布局技巧
 	  background-color: #a71d5d
 
 	.footer
-	  **margin-top: auto**
+	  margin-top: auto
 	  background-color: #2b821d
 	```
 	- 在Flexbox布局中，还可以在main上设置下面的样式，达到相等的效果
@@ -109,19 +108,19 @@ CSS布局技巧
 	.body
 	  height: 100%
 	  background-color: #795da3
-	  **display: flex**
+	  display: flex
 	
 	.item
 	  background-color: #2b821d
-	  **flex: 1**
+	  flex: 1
 	```
 1. Grid中的布局
 	```
 	.body
 	  height: 100%
 	  background-color: #795da3
-	  **display: grid**
-	  **grid-template-columns: repeat(3, 1fr)**  //3表示列数
+	  display: grid
+	  grid-template-columns: repeat(3, 1fr)  //3表示列数
 
 	.item
 	  background-color: #2b821d
@@ -136,7 +135,7 @@ CSS布局技巧
 	  background-color: #795da3
 	  display: grid
 	  grid-template-columns: repeat(3, 1fr)
-	  **min-inline-size: 300px**
+	  min-inline-size: 300px
 	```
 	- 当容器没有足够空间时，希望Flex项目（或Grid项目）会自动断行排列
 	```
@@ -160,7 +159,7 @@ CSS布局技巧
 
 	.item
 	  background-color: #2b821d
-	  **flex: 0 0 400px**
+	  flex: 0 0 400px
 	- 这个时候，当Flex容器没有足够空间时，Flex项目会按 flex-basis: 400px 计算其宽度，Flex容器没有足够空间时，Flex就会断行
 	```
 	- 反过来，如果Flex项目的值 flex 改成
@@ -173,7 +172,7 @@ CSS布局技巧
 
 	.item
 	  background-color: #2b821d
-	  **flex: 1 0 400px**
+	  flex: 1 0 400px
 	- 当Flex容器没有足够空间排列Flex项目时，Flex项目会按 flex-basis: 400px 计算其宽度，Flex会断行，并且同一行出现剩余空间时，Flex项目会扩展，占满整个Flex容器
 	```
 	- Grid中实现类似的效果要更复杂一点。可以使用 repeat() 函数，1fr 以及 auto-fit 等特性
@@ -186,10 +185,10 @@ CSS布局技巧
 	  gap: 2vh
 	```
 	- 其实在Grid中与 auto-fit 对比的值还有一个叫 auto-fill。但两者的差异是非常地大，用下图来描述 auto-fit 和 auto-fill 的差异
-	![file:///D:/readthedoc/readthedocs/source/前端游乐场/autofit_autofill.png](autofit_autofill.png)
+	![](autofit_autofill.png)
 #### 圣杯布局
 1. 圣杯图例
-	![file:///D:/readthedoc/readthedocs/source/前端游乐场/圣杯.png](圣杯.png)
+	![](圣杯.png)
 2. 使用Flexbox
 	- 对于圣杯布局而言，HTML结构是有一定的要求，那就是内容为先
 	```
