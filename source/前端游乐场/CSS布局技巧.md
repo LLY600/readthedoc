@@ -188,7 +188,7 @@ CSS布局技巧
 	![](autofit_autofill.png)
 #### 圣杯布局
 1. 圣杯图例
-	![](圣杯.png)
+	![](shengbei.png)
 2. 使用Flexbox
 	- 对于圣杯布局而言，HTML结构是有一定的要求，那就是内容为先
 	```
