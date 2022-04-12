@@ -325,7 +325,7 @@ object-fit: contain
 mix-blend-mode: multiply
 ```
 #### 选择最佳的值
-- 主要介绍clam()函数，接受三个参数，即 clam(MIN, VAL, MAX)，其中 MIN 表示最小值，VAL 表示首选值，MAX 表示最大值。它们之间：
+- 主要介绍clamp()函数，接受三个参数，即 clamp(MIN, VAL, MAX)，其中 MIN 表示最小值，VAL 表示首选值，MAX 表示最大值。它们之间：
 - 如果 VAL 在 MIN 和 MAX 之间，则使用 VAL 作为函数的返回值。
 - 如果 VAL 大于 MAX，则使用 MAX 作为函数的返回值。
 - 如果 VAL 小于 MIN，则使用 MIN 作为函数的返回值
