@@ -8,3 +8,4 @@ Python笔记
     Python优化提速小技巧
     Python很nice的三方库
     Python超全内置函数
+    7个高质量学习Python的开源库
