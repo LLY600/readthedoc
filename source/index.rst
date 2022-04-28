@@ -8,7 +8,7 @@
 
     软件测试体系知识/index
     Python笔记/index
-    Java笔记/index
+    Java笔记隐藏/index
     Linux笔记/index
     计算机网络/index
     Web安全/*
