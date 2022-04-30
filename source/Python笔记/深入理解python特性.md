@@ -320,3 +320,295 @@
 			return func(*args, **kwargs) 
 		return wrapper
 	```
+	- 编写“可调试”的装饰器	
+	- 在使用装饰器时，实际上是使用一个函数替换另一个函数。这个过程的 一个缺点是“隐藏”了（未装饰）原函数所附带的一些元数据，如包装闭包隐藏了原函数的名称、文档字符串和参数列表
+	- 这增加了调试程序和使用Python解释器的难度。有一个方法能避免这个问题：使用Python标准库中的functools.wraps装饰器
+	- 在自己的装饰器中使用functools.wraps能够将丢失的元数据从被装饰的函数复制到装饰器闭包中
+	```
+	import functools 
+	def uppercase(func): 
+		@functools.wraps(func) 
+		def wrapper(): 
+			return func().upper() 
+		return wrapper
+	```
+	- 将functools.wraps应用到由装饰器返回的封装闭包中，会获得原函数的文档字符串和其他元数据
+	- 建议最好在自己编写的所有装饰器中都使用functools.wraps！！！
+1. 有趣的*args和**kwargs
+	```
+	def foo(required, *args, **kwargs): 
+		print(required) 
+		if args: 
+			print(args) 
+		if kwargs: 
+			print(kwargs)
+	```
+	- 上述函数至少需要一个名为required的参数，但也可以接受额外的位置参数和关键字参数。 
+	- 如果用额外的参数调用该函数，args将收集额外的位置参数组成元组， 因为这个参数名称带有*前缀。 
+	- 同样，kwargs会收集额外的关键字参数来组成字典，因为参数名称带 有**前缀。 
+	- 如果不传递额外的参数，那么args和kwargs都为空
+	- 参数args和kwargs只是一个命名约定。哪怕将 其命名为*parms和**argv，前面的例子也能正常工作。
+	- 实际起作用的 语法分别是星号（*）和双星号（**），即解包操作符
+1. 函数参数解包
+	- *和**操作符有一个非常棒但有点神秘的功能，那就是用来从序列和字 典中“解包”函数参数
+	```
+	tmp_tuple = (1, 2, 3)
+	print(*tmp_tuple)
+	```
+	```
+	# tmp_tuple = [x for x in range(3)]
+	# 这种技术适用于任何可迭代对象，包括生成器表达式
+	tmp_tuple = (x for x in range(3))
+
+	def func(a, b, c):
+		print(a * a, b * b, c * c)
+
+	func(*tmp_tuple)
+	```
+	```
+	def func(a, b, c):
+		print(a * a, b * b, c * c)
+	从字典中解包关键字参数的**操作符
+	由于字典是无序的，8因此解包时会匹配字典键和函数参数：x参数接受 字典中与'x'键相关联的值
+	tmp_dict = {'a': 1, 'b': 2, 'c': 3}
+	func(**tmp_dict)
+	```
+	```
+	如果使用单个星号（*）操作符来解包字典，则所有的键将以随机顺序 传递给函数
+	def func(a, b, c):
+		print(a, b, c)
+
+	tmp_dict = {'x': 1, 'y': 2, 'z': 3}
+	func(*tmp_dict)
+	```
+1. 返回空值
+	- Python在所有函数的末尾添加了隐式的return None语句。因此，如果 函数没有指定返回值，默认情况下会返回None
+	```
+	def foo1(value): 
+		if value: 
+			return value 
+		else:
+			return None 
+	def foo2(value): 
+	"""纯return语句，相当于`return None`""" 
+		if value: 
+			return value 
+		else:
+			return 
+	def foo3(value): 
+	"""无return语句，也相当于`return None`""" 
+		if value: 
+			return value
+	```
+#### 类与面向对象
+1. 对象比较：is与==
+	- ==操作符比较的是相等性
+	- 而is操作符比较的是相同性
+	- 当两个变量指向同一个对象时，is表达式的结果为True； 当各变量指向的对象含有相同内容时，==表达式的结果为True
+1. 字符串转换（每个类都需要__repr__）
+	- 在Python中定义一个自定义类之后，如果尝试在控制台中输出其实例或 在解释器会话中查看，并不能得到十分令人满意的结果
+	- 是向类中添加双下划线方法 __str__和__repr__。这两个方法以具有Python特色的方式在不同情况下将对象转换为字符串
+	```
+
+	class Car:
+		def __init__(self, color, mileage):
+			self.color = color
+			self.mileage = mileage
+
+		def __str__(self):
+			return f'a {self.color} car'
+
+
+	if __name__ == '__main__':
+		c = Car('red', 8888)
+		print(c)
+	```
+	- _str__和__repr它们各自在实际使用中的差异
+	```
+	import datetime
+
+	today = datetime.date.today()
+	print(today)
+	print(str(today)) # 2022-04-30
+	print(repr(today)) # datetime.date(2022, 4, 30)
+	__str__函数的结果侧重于可读性，旨在为人们返回一 个简洁的文本表示
+	__repr__侧重的则是得到无歧义的结果，生成的字符串更多的是帮助 开发人员调试程序
+	```
+	- 为什么每个类都需要__repr__
+	- 如果不提供__str__方法，Python在查找__str__时会回退到__repr__ 的结果。因此建议总是为自定义类添加__repr__方法
+	```
+	class Car:
+		def __init__(self, color, mileage):
+			self.color = color
+			self.mileage = mileage
+
+		def __repr__(self):
+			return f'{self.__class__.__name__}({self.color!r},{self.mileage!r})'
+
+	if __name__ == '__main__':
+		c = Car('red', 8888)
+		print(c)
+	```
+1. 定义自己的异常类
+	- 可以清楚地显示出潜在的错误，让函 数和模块更具可维护性。自定义错误类型还可用来提供额外的调试信息
+	```
+	class NameTooShortError(ValueError): 
+		pass 
+	def validate(name): 
+		if len(name) < 10: 
+			raise NameTooShortError(name)
+	```
+	- NameTooShortError异常类型，它扩展自内置的ValueError类。一般情况下自定义异常都是派生自Exception这个异常基类或其他内置的Python异常，如ValueError或TypeError，取决于哪个更合适
+1. 克隆对象
+	- Python中的赋值语句不会创建对象的副本，而只是将名称绑定到对象上。对于不可变对象也是如此。 
+	- 但为了处理可变对象或可变对象集合，需要一种方法来创建这些对象 的“真实副本”或“克隆体”。 
+	- 从本质上讲，你有时需要用到对象的副本，以便修改副本时不会改动本体
+	- Python的内置可变容 器，如列表、字典和集合，调用对应的工厂函数就能完成复制
+	- new_list = list(original_list) 
+	- new_dict = dict(original_dict) 
+	- new_set = set(original_set)
+	```
+	tmp_list = [1]
+	copy_list = list(tmp_list)
+	print(tmp_list == copy_list)
+	print(tmp_list is copy_list)
+	```
+	- 但用这种方法无法复制自定义对象，且最重要的是这种方法只创建浅副本
+	- 浅复制是指构建一个新的容器对象，然后填充原对象中子对象的引用。 本质上浅复制只执行一层，复制过程不会递归，因此不会创建子对象的副本。 
+	- 深复制是递归复制，首先构造一个新的容器对象，然后递归地填充原始 对象中子对象的副本。这种方式会遍历整个对象树，以此来创建原对象 及其所有子项的完全独立的副本
+	- 使用copy模块中定义的deepcopy()函 数创建深副本
+	```
+	import copy
+
+	tmp_list = [[1, 2]]
+	copy_list = copy.deepcopy(tmp_list)
+	copy_list[0][0] = 2
+	print(copy_list)
+	print(tmp_list)
+	```
+	- 顺便说一句，还可以使用copy模块中的一个函数来创建浅副本。copy.copy()函数会创建对象的浅副本
+1. 用抽象基类避免继承错误
+	- 抽象基类（abstract base class，ABC）用来确保派生类实现了基类中的 特定方法
+	```
+	from abc import ABCMeta, abstractmethod
+
+	class Base(metaclass=ABCMeta):
+		@abstractmethod
+		def foo(self):
+			pass
+
+		@abstractmethod
+		def bar(self):
+			pass
+
+	class Concrete(Base):
+		def foo(self):
+			pass
+
+	assert issubclass(Concrete, Base)
+	c = Concrete()
+	print(c)
+	```
+	- 不用abc模块的话，如果缺失某个方法，则只有在实际调用这个方法时 才会抛出NotImplementedError
+1. namedtuple的优点
+	- 简单元组有一个缺点，那就是存储在其中的数据只能通过整数索引来访 问。无法给存储在元组中的单个属性赋予名称，因而代码的可读性不 高。
+	- 元组是一种具有单例性质的数据结构，很难保证两个元组存有相 同数量的字段和相同的属性，因此很容易因为不同元组之间的字段顺序 不同而引入难以意识到的bug
+	- namedtuple就是具有名称的元组。存储在其中的每个对象都可以 通过唯一的（人类可读的）标识符来访问。因此不必记住整数索引，也 无须采用其他变通方法，如将整数常量定义为索引的助记符
+	```
+	from collections import namedtuple
+
+	car = namedtuple('Car', 'color,mileage')
+	my_car = car('red', 56798)
+	```
+	- 将字符串'Car'作为第一个参数传递给 namedtuple工厂函数。 这个参数在Python文档中被称为typename，在调用namedtuple函数时 作为新创建的类名称
+	- 由于namedtuple并不知道创建的类最后会赋给哪个变量，因此需要明 确告诉它需要使用的类名
+	- namedtuple会自动生成文档字符串和 __repr__，其中的实现中会用到类名
+	- 将字段作为'color mileage'这样的字符串整体传递？ 答案是namedtuple的工厂函数会对字段名称字符串调用split()，将其解析为字段名称列表
+	```
+	'color mileage'.split() 
+	['color', 'mileage'] 
+	Car = namedtuple('Car', ['color', 'mileage'])
+	```
+	- 除了通过标识符来访问存储在namedtuple中的值之外，索引访问仍然可用
+	```
+	print(my_car.color)
+	print(my_car[1])
+	```
+	- 元组解包和用于函数参数解包的*操作符也能正常工作
+	```
+	color, mileage = my_car
+	print(color, mileage)
+	print(*my_car)
+	```
+	- 子类化namedtuple
+	```
+	Car = namedtuple('Car', 'color mileage') 
+	class MyCarWithMethods(Car): 
+		def hexcolor(self): 
+			if self.color == 'red': 
+				return '#ff0000' 
+			else:
+				return '#000000'
+	 c = MyCarWithMethods('red', 1234)
+	 c.hexcolor()
+	```
+	- 由于namedtuple内部的结构比较特殊，因此很难添加新的不可变 字段。另外，创建namedtuple类层次的最简单方法是使用基类元组的 _fields属性
+	```
+	Car = namedtuple('Car', 'color mileage') 
+	ElectricCar = namedtuple('ElectricCar', Car._fields + ('charge',))
+	ElectricCar('red', 1234, 45.0)
+	```
+	- 内置的辅助方法
+		- _asdict()辅助方法开始，该方法将namedtuple的内容以字典形式返回
+		```
+		print(my_car._asdict())
+		print(json.dumps(my_car._asdict()))
+		```
+		- 另一个有用的辅助函数是_replace()。该方法用于创建一个元组的浅副本，并能够选择替换其中的一些字段
+		```
+		print(my_car._replace(color='blue'))
+		```
+		- 最后介绍的是_make()类方法，用来从序列或迭代对象中创建 namedtuple的新实例
+		```
+		print(my_car._make(['orange', '6666']))
+		```
+1. 类变量与实例变量的陷阱
+	- 类变量在类定义内部声明（但位于实例方法之外），不受任何特定类实 例的束缚。类变量将其内容存储在类本身中，从特定类创建的所有对象 都可以访问同一组类变量。这意味着修改类变量会同时影响所有对象实 例。
+	- 实例变量总是绑定到特定的对象实例。它的内容不存储在类上，而是存 储在每个由类创建的单个对象上。因此实例变量的内容与每个对象实例 相关，修改实例变量只会影响对应的对象实例
+	```
+	class Dog:
+		legs = 4  # 类变量
+
+		def __init__(self, name):
+			self.name = name  # 实例变量
+
+	xh = Dog('小灰')
+	xb = Dog('小白')
+	print(xh.name)
+	print(xb.name)
+	print(xh.legs)
+	print(xb.legs)
+	print(Dog.name)  # AttributeError: type object 'Dog' has no attribute 'name'
+	print(Dog.legs)
+	```
+	- 虽然得到了想要的结果，但在实例中引入了一个legs实例变量。而新的legs实例变量“遮盖”了相同名称的类变量，在访问对象实例作用域时覆盖并隐藏类变量
+	```
+	xh.legs = 6
+	print(xh.legs, xb.legs, Dog.legs)
+	print(xh.__class__.legs)
+	```
+	- 一个示例
+	```
+	class CountedObject: 
+		num_instances = 0 
+		def __init__(self): 
+			self.__class__.num_instances += 1
+	```
+	- 每次创建此类的新实例时，会运行__init__构造函数并将共享计数器 递增1
+	- 下面是错误的案例：
+	```
+	class CountedObject: 
+		num_instances = 0 
+		def __init__(self): 
+			self.num_instances += 1
+	```
