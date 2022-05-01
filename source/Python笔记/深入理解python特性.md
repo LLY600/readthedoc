@@ -612,3 +612,592 @@
 		def __init__(self): 
 			self.num_instances += 1
 	```
+1. 实例方法、类方法和静态方法揭秘
+	```
+	class MyClass: 
+		def method(self): 
+			return 'instance method called', self 
+		@classmethod 
+		def classmethod(cls): 
+			return 'class method called', cls 
+		@staticmethod 
+		def staticmethod(): 
+			return 'static method called'
+	```
+	- 实例方法method方法，需要一个参数self，在调用时指向MyClass的一个实例
+	- 实例方法通过self参数在同一个对象上自由访问该对象的其他属性和方法，因此特别适合修改对象的状态
+	- 实例方法不仅可以修改对象状态，也可以通过self.__class__属性访 问类本身。这意味着实例方法也可以修改类的状态。
+	- 由于类方法只能访问这个cls参数，因此无法修改对象实例的状态，这需要用到self。但类方法可以修改应用于类所有实例的类状态
+	- 静态方法不能修改对象状态或类状态，仅能访问特定的数据，主要用于声明属于某个命名空间的方法
+	```
+	mc = MyClass()
+	print(mc.method())
+	print(mc.classmethod())
+	print(mc.staticmethod())
+
+	print(MyClass.method()) # TypeError: method() missing 1 required positional argument: 'self'
+	print(MyClass.classmethod())
+	print(MyClass.staticmethod())
+	```
+	- 使用@classmethod的Pizza工厂类
+	```
+	class Pizza: 
+		def __init__(self, ingredients): 
+			self.ingredients = ingredients 
+		def __repr__(self): 
+			return f'Pizza({self.ingredients!r})' 
+		@classmethod 
+		def margherita(cls): 
+			return cls(['mozzarella', 'tomatoes']) 
+		@classmethod 
+		def prosciutto(cls): 
+			return cls(['mozzarella', 'tomatoes', 'ham'])
+	```
+	- 注意我们在margherita和prosciutto工厂方法中使用了cls参数，而没有直接调用Pizza构造函数
+	- Python只允许每个类有一个__init__方法。使用类方法可以按需添加 额外的构造函数，使得类的接口在一定程度上能做到“自说明”，同时简化了类的使用
+	- 什么时候使用静态方法
+	```
+	import math
+
+	class Pizza:
+		def __init__(self, radius, ingredients):
+			self.radius = radius
+			self.ingredients = ingredients
+
+		def __repr__(self):
+			return (f'Pizza({self.radius!r}, ' f'{self.ingredients!r})')
+
+		def area(self):
+			return self.circle_area(self.radius)
+
+		@staticmethod
+		def circle_area(r):
+			return r ** 2 * math.pi
+	```
+	```
+	p = Pizza(4, 'LiuQQ')
+	print(p.area())
+
+	print(Pizza.circle_area(4))
+	```
+	- 将方法标记为静态方法不仅是一种提示，告诉大家这个方法不会修改类或实例状态，而且从上面可以看到，Python运行时也会实际落实这些限制。
+	- 通过这样的技术可以清晰地识别出类架构的各个部分，因而新的开发工 作能够很自然地分配到对应的部分中。
+#### Python中常见的数据结构
+1. 字典、映射和散列表
+	- dict——首选字典实现
+	- 在Python中，字典是核心数据结构
+	```
+	squares = {x: x * x for x in range(6)}
+	```
+	- collections.OrderedDict——能记住键的插入顺序
+	```
+	import collections
+	d = collections.OrderedDict(one=1, two=2, three=3) 
+	```
+	- collections.defaultdict——为缺失的键返回默认值
+	```
+	from collections import defaultdict
+
+	d = defaultdict(list)
+	d['key'].append('value1')
+	d['key'].append('value2')
+	d['key'].append('value3')
+	print(d)
+	```
+	- collections.ChainMap——搜索多个字典
+	- collections.ChainMap数据结构将多个字典分组到一个映射中
+	```
+	from collections import ChainMap
+
+	dict1 = {'one': 1, 'two': 2}
+	dict2 = {'three': 3, 'four': 4}
+	chain = ChainMap(dict1, dict2)
+	print(chain)
+	```
+	- types.MappingProxyType——用于创建只读字典
+	- 如果希望返回一个字典来表示类或模块的内部状态，同时禁 止向该对象写入内容，此时MappingProxyType就能派上用场。
+	- 使用MappingProxyType无须创建完整的字典副本。
+	```
+	from types import MappingProxyType
+
+	writable = {'one': 1, 'two': 2}
+	read_only = MappingProxyType(writable)
+	print(read_only['one'])
+	read_only['one'] = 2  # TypeError: 'mappingproxy' object does not support item assignment
+	writable['one'] = 11
+	print(read_only)
+	```
+1. 数组数据结构
+	- 列表——可变动态数组
+	- 虽然名字叫列表，但它实际上是以动态数组实现的。这意味着列表能够添加或删除元素，还能分配或释放内存来自动调整存储空间。
+	```
+	arr = ['one', 'two', 'three']
+	```
+	- 元组——不可变容器
+	```
+	arr = 'a', 'b', 'c'
+	arr = ('a', 'b', 'c')
+	```
+	- array.array——基本类型数组
+	- 使用array.array类创建的数组是可变的，行为与列表类似。但有一个重要的区别：这种数组是单一数据类型的“类型数组”。
+	```
+	import array
+
+	arr = array.array('f', (1.0, 2))
+	print(arr)
+	```
+	- str——含有Unicode字符的不可变数组
+	- python3.x使用str对象将文本数据存储为不可变的Unicode字符序列。实际上，这意味着str是不可变的字符数组。说来也怪，str也是一种递归的数据结构，字符串中的每个字符都是长度为1的str对象。
+	```
+	tmp_str = 'akjgdklajgld'
+	print(tmp_str[2])
+	tmp_str[3] = 'c' # TypeError: 'str' object does not support item assignment
+	del tmp_str[4]  # TypeError: 'str' object doesn't support item deletion
+	# 字符串可以解包到列表中，从而得到可变版本
+	print(list(tmp_str))
+	print(''.join(list(tmp_str)))
+	```
+	- bytes——含有单字节的不可变数组
+	- bytes对象是单字节的不可变序列，单字节为0～255（含）范围内的整数。从概念上讲，bytes与str对象类似，可认为是不可变的字节数组。
+	```
+	arr = bytes((1, 2, 3))
+	print(arr)
+	print(arr[1])
+	```
+	- bytearray——含有单字节的可变数组
+	- bytearray类型是可变整数序列 ，包含的整数范围在0～ 255（含）。bytearray与bytes对象关系密切，主要区别在于 bytearray可以自由修改，如覆盖、删除现有元素和添加新元素，此时 bytearray对象将相应地增长和缩小。
+	```
+	arr = bytearray((1, 2, 3, 4))
+	print(arr)
+	print(arr[1])
+	arr[2] = 255
+	del arr[3]
+	print(arr)
+	```
+	- 如果存储数值（整数或浮点数）数据并要求排列紧密且注重性能，那 么先尝试array.array，看能否满足要求。另外可尝试准库之外的软件包，如NumPy或Pandas
+1. 记录、结构体和纯数据对象
+	- typing.NamedTuple——改进版namedtuple
+	- 这个类添加自Python 3.6，是collections模块中namedtuple类的姊 妹。 它与namedtuple非常相似，主要区别在于用新语法来定义记录 类型并支持类型注解（type hint）
+	```
+	from typing import NamedTuple
+
+	class Car(NamedTuple):
+		color: str
+		mileage: float
+		automatic: bool
+
+	car1 = Car('red', 666, True)
+	print(car1)
+	car1.mileage = 888  # AttributeError: can't set attribute
+	```
+	- struct.Struct——序列化C结构体
+	- struct.Struct类25用于在Python值和C结构体之间转换，并将其序列化为Python字节对象。
+	- 例如可以用来处理存储在文件中或来自网络连接的二进制数据。
+	```
+	from struct import Struct
+
+	mystruct = Struct('i?f')
+	data = mystruct.pack(123, False, 42.0)
+	print(data)
+	print(mystruct.unpack(data))
+	```
+	- types.SimpleNamespace——花哨的属性访问
+	- SimpleNamespace实例将其中的所有键都公开为类属性。 因此访问属性时可以使用obj.key这样的点式语法，不需要用普通字典 的obj['key']方括号索引语法
+	```
+	from types import SimpleNamespace
+
+	car = SimpleNamespace(color='red', mileage=78967, automatic=True)
+	print(car.color)
+	```
+1. 集合和多重集合
+	- 集合含有一组不含重复元素的无序对象。集合可用来快速检查元素的包 含性，插入或删除值，计算两个集合的并集或交集
+	```
+	tmp_set = {x for x in range(5)}
+	print(tmp_set)
+	```
+	- 但要小心，创建空集时需要调用set()构造函数。空花括号{}有歧义， 会创建一个空字典
+	```
+	a = {'a', 'b', 'c', 'd'}
+	b = {'b', 'c'}
+	print(b.intersection(a))
+	```
+	- frozenset——不可变集合
+	```
+	a = frozenset({'a', 'b'})
+	a.add('c')  # AttributeError: 'frozenset' object has no attribute 'add'
+
+	b = {a: 1}
+	print(b)
+	```
+	- collections.Counter——多重集合
+	- 该类型允许在集合中多次出现同一个元素
+	```
+	from collections import Counter
+
+	a = Counter()
+	b = {'a': 1, 'b': 2}
+	a.update(b)
+	print(a)
+	c = {'a': 1, 'b': 2, 'c': 3}
+	a.update(c)
+	print(a)
+	```
+	- Counter类有一点要注意，在计算Counter对象中元素的数量时需要小 心。调用len()返回的是多重集合中唯一元素的数量，而想获取元素的总数需要使用sum函数
+	```
+	print(len(a))
+	print(sum(a.values()))
+	```
+1. 栈（后进先出）
+	- 列表——简单的内置栈
+	- Python的列表在内部以动态数组实现，这意味着在添加或删除时，列表 偶尔需要调整元素的存储空间大小。列表会预先分配一些后备存储空 间，因此并非每个入栈或出栈操作都需要调整大小，所以这些操作的均摊时间复杂度为O(1)
+	- collections.deque——快速且稳健的栈
+	```
+	from collections import deque
+	d = deque()
+	d.append(1)
+	d.append(2)
+	d.append(3)
+	print(d)
+	```
+	- queue.LifoQueue——为并行计算提供锁语义
+	- queue.LifoQueue这个位于Python标准库中的栈实现是同步的，提供了锁语义来支持多个并发的生产者和消费者
+	```
+	from queue import LifoQueue
+
+	l = LifoQueue()
+	l.put(1)
+	l.put(2)
+	l.put(3)
+	print(l)
+	print(l.get())
+	l.get_nowait()  # 不用等待
+	```
+1. 队列（先进先出）
+	- 列表——非常慢的队列
+	```
+	 q = []
+	 q.append('eat') 
+	 q.append('sleep') 
+	 q.append('code') 
+	 q 
+	 ['eat', 'sleep', 'code'] 
+	 # 小心，这种操作很慢！ 
+	 q.pop(0) 
+	 'eat'
+	 ```
+	- collections.deque——快速和稳健的队列
+	```
+	from collections import deque 
+	q = deque() 
+	q.append('eat') 
+	q.append('sleep') 
+	q.popleft() 'eat'
+	```
+	- queue.Queue——为并行计算提供的锁语义
+	```
+	 from queue import Queue 
+	 q = Queue() 
+	 q.put('eat') 
+	 q.put('sleep') 
+	 q.get() 'eat'
+	 
+	 - multiprocessing.Queue——共享作业队列
+	 - multiprocessing.Queue作为共享作业队列来实现，允许多个并发 worker并行处理队列中的元素。由于CPython中存在全局解释器锁 （GIL），因此无法在单个解释器进程上执行某些并行化过程，使得大家都转向基于进程的并行化
+1. 优先队列
+	- 优先队列是一个容器数据结构，使用具有全序关系的键（例如用数值 表示的权重）来管理元素，以便快速访问容器中键值最小或最大的元素。
+	- 列表——手动维护有序队列
+	```
+	tmp_list = []
+	tmp_list.append((3, 'a'))
+	tmp_list.append((1, 'b'))
+	tmp_list.append((2, 'c'))
+	# 注意：每当添加新元素或调用bisect.insort()时，都要重新排序。
+	tmp_list.sort(reverse=True)
+	print(tmp_list)
+	```
+	- heapq——基于列表的二叉堆
+	```
+	import heapq
+
+	q = []
+	heapq.heappush(q, (3, 'a'))
+	heapq.heappush(q, (1, 'b'))
+	heapq.heappush(q, (2, 'c'))
+	while q:
+		next_item = heapq.heappop(q)
+		print(next_item)
+	```
+	```
+	(1, 'b')
+	(2, 'c')
+	(3, 'a')
+	```
+	- queue.PriorityQueue——美丽的优先级队列
+	- queue.PriorityQueue这个优先级队列的实现在内部使用了heapq，时间和空间复杂度与heapq相同。 区别在于PriorityQueue是同步的，提供了锁语义来支持多个并发的生产者和消费者。
+	```
+	from queue import PriorityQueue
+
+	p = PriorityQueue()
+	p.put((3, 'a'))
+	p.put((1, 'b'))
+	p.put((2, 'c'))
+	while not p.empty():
+		next_item = p.get()
+		print(next_item)
+	```
+#### 循环和迭代
+1. 编写有Python特色的循环
+	- 直接在容器或序列中迭代元素
+	```
+	my_items = [1,2,3]
+	for item in my_items: 
+		print(item)
+	```
+	- 如果需要用到索引
+	```
+	 for i, item in enumerate(my_items): 
+		print(f'{i}: {item}')
+	```
+1. 理解解析式
+	```
+	values = [expression for item in collection]
+	squares = [x * x for x in range(10)]
+	```
+	- 列表解析式可以根据某些条件过滤元素，将符合条件的值添加到输出列表中
+	```
+	values = [expression for item in collection if condition]
+	even_squares = [x * x for x in range(10) if x % 2 == 0]
+	```
+1. 列表切片技巧
+	- 需要记住切片计算方法是算头不算尾
+	```
+	lst = [1, 2, 3, 4, 5]
+	# lst[start:end:step]
+	lst[1:3:1] 
+	[2, 3]
+	```
+	- [::-1]切片会得到原始列表的逆序副本
+	- 但在大多数情况下仍然坚持使用list.reverse()和内置的reversed()函数来反转列表
+	```
+	tmp_list = [1, 2, 3]
+	tmp_list.reverse()
+	print(tmp_list)
+	reversed_list = reversed(tmp_list)
+	for item in reversed_list:
+		print(item)
+	```
+	- 使用:操作符清空列表中的所有元素，同时不会破坏列表对象本身
+	- Python 3中也可以使用lst.clear()完成同样的工作，python2无法使用
+	- 除了清空列表之外，切片还可以用来在不创建新列表对象的情况下替换列表中的所有元素，即手动快速清空列表然后重新填充元素
+	```
+	original_list = [1, 2, 3]
+	tmp_list = original_list
+	tmp_list[:] = [4, 5, 6]
+	print(tmp_list)
+	print(original_list)
+	print(tmp_list is original_list)
+	```
+	- 另一个作用是创建现有列表的浅副本
+	```
+	original_list = [1, 2, 3]
+	copy_list = original_list[:]
+	print(copy_list)
+	print(copy_list is original_list)
+	```
+1. 美丽的迭代器
+	- 无限迭代
+	```
+	class Repeater:
+		def __init__(self, value):
+			self.value = value
+
+		def __iter__(self):
+			return RepeaterIterator(self)
+
+	class RepeaterIterator:
+		def __init__(self, source):
+			self.source = source
+
+		def __next__(self):
+			return self.source.value
+
+	repeater = Repeater('hello')
+	for item in repeater:
+		print(item)
+	```
+	- 更简单的迭代器类
+	```
+	class Repeater: 
+		def __init__(self, value): 
+			self.value = value 
+		def __iter__(self): 
+			return self 
+		def __next__(self): 
+			return self.value
+	```
+1. 生成器是简化版迭代器
+2. 生成器表达式
+	```
+	generator = ('hello' for i in range(3))
+	print(generator)
+	print(next(generator))
+	```
+	- 过滤值
+	```
+	even_squares = (x * x for x in range(10) if x % 2 == 0)
+	```
+	- 内联生成器表达式
+	- 因为生成器表达式也是表达式，所以可以与其他语句一起内联使用
+	```
+	for item in (f'hello-{i+1}' for i in range(3)):
+		print(item)
+	```
+	- 另外还有一个语法技巧可以美化生成器表达式。如果生成器表达式是作 为函数中的单个参数使用，那么可以删除生成器表达式外层的括号
+	```
+	sum(x * 2 for x in range(10))
+	```
+1. 迭代器链
+	```
+	integers = range(8)
+	squared = (i * i for i in integers)
+	negated = (-i for i in squared)
+	print(list(negated))
+	```
+#### 字典技巧
+1. 字典默认值
+	- 当调用get()时，它会检查字典中是否存在给定的键。如果存在，则返 回该键对应的值。如果不存在，则返回默认的备选值
+	```
+	name_for_userid = { 
+		382: 'Alice', 
+		950: 'Bob', 
+		590: 'Dilbert', 
+		}
+	def greeting(userid): 
+		return f'Hi {name_for_userid.get( userid, 'there')}!'
+	```
+1. 字典排序
+	- Python字典是无序的，因此迭代时无法确保能以相同的顺序得到字典元素（从Python 3.6开始，字典会保有顺序）
+	- 但有时需要根据某项属性，如字典的键、值或其他派生属性对字典中的项排序
+	```
+	xs = {'a': 4, 'c': 2, 'b': 3, 'd': 1}
+	sorted(xs.items())
+	```
+	- 幸运的是，有一种方法可以控制字典项的排序方式。向sorted()函数 传递一个key函数能够改变字典项的比较方式
+	```
+	 sorted(xs.items(), key=lambda x: x[1])
+	```
+	- 事实上，由于这个概念及其常见，因此Python的标准库包含了operator模块。operator模块将一些常用的key函数实现为即插即用的组件，如operator.itemgetter和operator.attrgetter
+	```
+	import operator
+
+	xs = {'a': 4, 'c': 6, 'b': 3, 'd': 1}
+	print(sorted(xs.items(), key=operator.itemgetter(0)))
+	print(sorted(xs.items(), key=operator.itemgetter(1)))
+	print(sorted(xs.items(), key=operator.itemgetter(1), reverse=True))
+	```
+1. 用字典模拟switch/case语句
+	```
+	func_dict = { 
+		'cond_a': handle_a, 
+		'cond_b': handle_b 
+		}
+	func_dict.get(cond, handle_default)()
+	```
+	```
+	def dispatch_dict(operator, x, y): 
+		return { 
+			'add': lambda: x + y, 
+			'sub': lambda: x - y, 
+			'mul': lambda: x * y, 
+			'div': lambda: x / y, 
+			}.get(operator, lambda: None)()
+	dispatch_dict('mul', 2, 8)
+	```
+1. “最疯狂”的字典表达式
+	```
+	dict_demo = {True: 'yes', 1: 'no', 1.0: 'maybe'}
+	print(dict_demo)  # {True: 'maybe'}
+	```
+	- Python认为本例中使用的所有字典键都是相等的
+	```
+	True == 1 == 1.0
+	```
+	- 这意味着从技术上来说，布尔值可以作为Python中列表或元组的索引
+	```
+	 ['no', 'yes'][True]  # 'yes'
+	```
+1. 合并词典的几种方式
+	- 在Python中合并多个字典的经典办法是使用内置字典的update()方法
+	- 基本实现相当于遍历右侧字典中的所 有项，并将每个键值对添加到左侧字典中，在此过程中会用新的值覆盖现有键对应的值
+	```
+	xs = {'a': 1, 'b': 2}
+	ys = {'b': 3, 'c': 4}
+
+	xs.update(ys)
+	print(xs)
+
+	ys.update(xs)
+	print(ys)
+	```
+	- 另一个在Python2和Python3中合并字典的办法是结合内置的dict()与**操作符来“拆包”对象
+	```
+	xs = {'a': 1, 'b': 2}
+	ys = {'b': 3, 'c': 4}
+
+	zs = dict(xs, **ys)
+	print(zs)
+
+	zs = dict(ys, **xs)
+	print(zs)
+	```
+	- 但与多次调用update()一样，这种方式只适用于合并两个字典，无法一次合并多个字典
+	- 从Python3.5开始，**操作符变得更加灵活。因此在Python 3.5+中还有另外一种更漂亮的方法来合并任意数量的字典
+	```
+	zs = {**xs, **ys}
+	```
+	- 该表达式的结果与依次调用update()完全相同。键和值按照从左到右 的顺序设置，所以解决冲突的方式也相同，都是右侧优先。ys中的值覆 盖xs中相同键下已有的值
+1. 美观地输出字典
+	- 使用Python的内置json模块，即使用json.dumps()以更好的格式输出Python字典
+	```
+	import json 
+	json.dumps(mapping, indent=4, sort_keys=True) 
+	{ 
+		"a": 23, 
+		"b": 42, 
+		"c": 12648430 
+	}
+	```
+	- json模块只能序列化含有特定类型的字典。对于Python 3.7，能够序列化的内置类型有：dict、list、tupl、str、int、float（和一些Enum、bool、None，这意味着如果字典含有不支持的数据类型，如函数，那么在打印时会遇到问题：
+	- 在Python中 美观输出对象的经典办法是使用内置的pprint模块
+	```
+	import pprint
+	pprint.pprint(mapping) 
+	{'a': 23, 'b': 42, 'c': 12648430, 'd': set([1, 2, 3])}
+	```
+#### Python式高效技巧
+1. 探索Python的模块和对象
+	- 使用 Python内置的dir()函数能直接在Python REPL中访问这些信息
+	```
+	import datetime
+	dir(datetime)
+	```
+	- 不仅适用于模块本身，还可用于模块导出的类和数据结构
+	```
+	dir(datetime.date)
+	```
+	- 有时可能会产生冗长且难以快速阅读的输出内容
+	```
+	[_ for _ in dir(datetime) if 'date' in _.lower()]  
+	# ['date', 'datetime', 'datetime_CAPI']
+	```
+	- 能获得更多、更详细的信息
+	```
+	help(datetime)
+	help(datetime.date)
+	help(datetime.date.fromtimestamp)
+	help(dir)
+	```
+1. 用virtualenv隔离项目依赖关系
+	- 用pip安装有一个问题，那就是软件包默认会被安装到全局Python环境中
+	- 是使用所谓的虚拟环境将各个Python环境分开，即按项目隔离Python依赖，每个项目能选择不同版本的Python解释器
+	- 通常将虚拟环境直接放入项目文件夹中，以便更好地组织项目和分离环境。你可以自行决定，比如在专门的python-environments目录下保存所有项目的环境
