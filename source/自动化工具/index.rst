@@ -8,4 +8,5 @@
     Cypress/index
     Charles/index
     BurpSuite/index
+    Wireshark/index
 
