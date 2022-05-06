@@ -1,9 +1,10 @@
-Python笔记
+﻿Python笔记
 =========================================
 
 .. toctree::
     :maxdepth: 2
-
+ 
+    Python标准库
     Python正则表达式
     Python优化技巧
     Python实用技巧
