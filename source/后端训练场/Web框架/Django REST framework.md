@@ -409,8 +409,98 @@ Django REST framework
 	- 反序列化,把客户端发送过来的数据,经过request以后变成字典,序列化器可以把字典转成模型
 	- 反序列化,完成数据校验功能
 1. 定义序列化器
+	- serializers是drf提供给开发者调用的序列化器模块
+	- 里面声明了所有的可用序列化器的基类：
+	- Serializer：序列化器基类，drf中所有的序列化器类都必须继承于Serializer
+	- ModelSerializer模型序列化器基类，是序列化器基类的子类，在工作中，除了Serializer基类以外，最常用的序列化器类基类
+	```
+	from rest_framework import serializers
+
+
+	class StudentModelSerializers(serializers.ModelSerializer):
+		# 转换的字段申明
+		id = serializers.IntegerField()
+		name = serializers.CharField()
+		sex = serializers.BooleanField()
+		age = serializers.IntegerField()
+		description = serializers.CharField()
+	```
+	```
+
+
+	```
+	```
+	from django.urls import path
+	from . import views
+
+	urlpatterns = [
+		path('student', views.StudentView.as_view())
+	]
+	```
+	```
+	from django.contrib import admin
+	from django.urls import path, include
+
+	urlpatterns = [
+		path('admin/', admin.site.urls),
+		path('api/', include("students_origin.urls")),
+		path('api/', include("students_drf.urls")),
+		path('sers/', include("sers.urls")),
+	]
+	```
+
 2. 创建Serializer对象
-3. 创建Serializer对象
+	- Serializer的构造方法为
+	```
+	Serializer(instance=None, data=empty, **kwarg)
+	```
+	- 用于序列化时，将模型类对象传入instance参数
+	- 用于反序列化时，将要被反序列化的数据传入data参数
+	- 除了instance和data参数外，在构造Serializer对象时，还可通过context参数额外添加数据，如
+	```
+	serializer = AccountSerializer(account, context={'request': request})
+	```
+	- 使用序列化器的时候一定要注意，序列化器声明了以后，不会自动执行，需要我们在视图中进行调用才可以。
+	- 序列化器无法直接接收数据，需要我们在视图中创建序列化器对象时把使用的数据传递过来。
+	- 序列化器的字段声明类似于我们前面使用过的表单系统。
+	- 开发restful api时，序列化器会帮我们把模型数据转换成字典.
+	- drf提供的视图会帮我们把字典转换成json,或者把客户端发送过来的数据转换字典.
+3. 序列化器的使用
+	- **序列化**
+	```
+	from django.views import View
+	from django.http.response import JsonResponse
+	from .serializers import StudentModelSerializers
+	from students_origin.models import Student
+	
+	
+	class StudentView(View):
+	    """序列化一个对象"""
+	
+	    def get(self, request):
+	        # 获取数据集
+	        student_list = Student.objects.first()
+	        # 实例化系列化器
+	        serializer = StudentModelSerializers(instance=student_list)
+	        # 获取转换后的数据
+	        data = serializer.data
+	        # 响应数据
+	        return JsonResponse(data=data, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+	
+	    """序列化多个对象"""
+	
+	    def get_(self, request):
+	        # 获取数据集
+	        student_list = Student.objects.all()
+	        # 实例化系列化器
+	        serializer = StudentModelSerializers(instance=student_list, many=True)
+	        # 获取转换后的数据
+	        data = serializer.data
+	        # 响应数据
+	        return JsonResponse(data=data, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+	```
+	- **反序列化**
+
 #### 视图
 1. 作用
 	- 控制序列化器的执行（检验、保存、转换数据）
