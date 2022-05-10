@@ -6,5 +6,5 @@
 
     
     计算机网络核心概念
-    HTTP协议
+    HTTP、HTTPS协议
     Cookie、Session、Token、JWT
