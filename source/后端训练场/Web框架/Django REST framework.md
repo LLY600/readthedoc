@@ -500,6 +500,48 @@ Django REST framework
 	        return JsonResponse(data=data, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
 	```
 	- **反序列化**
+	```
+	from rest_framework import serializers
+	from students_origin.models import Student
+
+
+	class StudentModelSerializers(serializers.ModelSerializer):
+		# 转换的字段申明
+		id = serializers.IntegerField(read_only=True)
+		name = serializers.CharField(required=True)
+		sex = serializers.BooleanField(default=True)
+		age = serializers.IntegerField(max_value=100, min_value=0, error_messages={
+			'min_value': 'The Age Must Be >= 0!',
+			'max_value': 'The Age Must Be <= 100!',
+		})
+		classmate = serializers.CharField(required=True)
+		description = serializers.CharField(allow_null=True, allow_blank=True)  # 允许客户端不填写数据，或者值为”“
+
+		class Meta:
+			model = Student
+			fields = "__all__"
+	```
+	```
+	    def get(self, request):
+        """反序列化，采用字段选项来验证数据"""
+        # 接受客户端提交的数据
+        # data = json.dumps(request.body)
+        data = {
+            'name': 'xxx',
+            'age': -118,
+            'sex': True,
+            'classmate': '301',
+            'description': 'True',
+        }
+        # 实例化序列化器
+        serializer = StudentModelSerializers(data=data)
+        # 调用序列化器进行数据验证
+        # ret = serializer.is_valid()  # 不抛出异常
+        serializer.is_valid(raise_exception=True)  # 直接抛出异常，代码不往下执行，常用
+        # 获取校验以后的结果
+        # 返回数据
+        return JsonResponse(dict(serializer.validated_data))
+	```
 
 #### 视图
 1. 作用
