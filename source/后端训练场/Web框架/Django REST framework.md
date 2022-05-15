@@ -501,47 +501,220 @@ Django REST framework
 	```
 	- **反序列化**
 	```
+	# -*- coding:utf-8 -*-
+	"""
+	文件: serializers.py
+	"""
+
 	from rest_framework import serializers
 	from students_origin.models import Student
 
 
-	class StudentModelSerializers(serializers.ModelSerializer):
+	def check_classmate(data):  # 第四种数据校验方式（较少用）
+		"""外部验证函数"""
+		if len(data) != 3:
+			raise serializers.ValidationError(detail='班级编号格式不正确！', code='check_classmate')
+		return data
+
+
+	class StudentModelSerializers(serializers.Serializer):
 		# 转换的字段申明
 		id = serializers.IntegerField(read_only=True)
 		name = serializers.CharField(required=True)
 		sex = serializers.BooleanField(default=True)
 		age = serializers.IntegerField(max_value=100, min_value=0, error_messages={
-			'min_value': 'The Age Must Be >= 0!',
+			'min_value': 'The Age Must Be >= 0!',  # 第一种数据校验方式
 			'max_value': 'The Age Must Be <= 100!',
 		})
-		classmate = serializers.CharField(required=True)
+		classmate = serializers.CharField(required=True, validators=[check_classmate])  # validators是外部验证函数选项，值是列表，成员是函数名
 		description = serializers.CharField(allow_null=True, allow_blank=True)  # 允许客户端不填写数据，或者值为”“
 
-		class Meta:
-			model = Student
-			fields = "__all__"
+		#class Meta:
+			#model = Student
+			#fields = "__all__"
+
+		def validate_name(self, data):  # 第二种数据校验方式
+			"""
+			验证单个字段
+			方法名的格式必须为：validate_字段，否则序列化器不识别
+			validate开头的方法，会自动被is_valid调用
+			"""
+			if data in ['python', 'django']:
+				# 在序列化器中，失败可以通过抛出异常的方式来告知is_valid
+				raise serializers.ValidationError(detail='名称不能是python或者django！', code='valide_name')
+			return data
+
+		def validate(self, attrs):  # 第三种数据校验方式
+			"""
+			验证所有字段
+			validate是固定的方法名
+			参数attrs是序列化器实例化时的data选项数据
+			"""
+			if attrs.get('classmate') == '301' and attrs.get('sex'):
+				raise serializers.ValidationError(detail='301班只能是小姐姐！', code='validate')
+			return attrs
+
+		def create(self, validated_data):
+			student = Student.objects.create(**validated_data)
+			return student
+
+		def update(self, instance, validated_data):
+			for key, value in validated_data.items():
+				setattr(instance, key, value)
+			instance.save()
+			return instance
 	```
 	```
-	    def get(self, request):
-        """反序列化，采用字段选项来验证数据"""
-        # 接受客户端提交的数据
-        # data = json.dumps(request.body)
-        data = {
-            'name': 'xxx',
-            'age': -118,
-            'sex': True,
-            'classmate': '301',
-            'description': 'True',
-        }
-        # 实例化序列化器
-        serializer = StudentModelSerializers(data=data)
-        # 调用序列化器进行数据验证
-        # ret = serializer.is_valid()  # 不抛出异常
-        serializer.is_valid(raise_exception=True)  # 直接抛出异常，代码不往下执行，常用
-        # 获取校验以后的结果
-        # 返回数据
-        return JsonResponse(dict(serializer.validated_data))
+	# views.py
+	
+	import json
+	from django.views import View
+	from django.http.response import JsonResponse
+	from .serializers import StudentModelSerializers
+	from students_origin.models import Student
+
+
+	class StudentView(View):
+		"""序列化一个对象"""
+
+		def get1(self, request):
+			# 获取数据集
+			student_list = Student.objects.first()
+			# 实例化系列化器
+			serializer = StudentModelSerializers(instance=student_list)
+			# 获取转换后的数据
+			data = serializer.data
+			# 响应数据
+			return JsonResponse(data=data, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+
+		"""序列化多个对象"""
+
+		def get2(self, request):
+			# 获取数据集
+			student_list = Student.objects.all()
+			# 实例化系列化器
+			serializer = StudentModelSerializers(instance=student_list, many=True)
+			# 获取转换后的数据
+			data = serializer.data
+			# 响应数据
+			return JsonResponse(data=data, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+
+		def get3(self, request):
+			"""反序列化，采用字段选项来验证数据"""
+			# 接受客户端提交的数据
+			# data = json.dumps(request.body)
+			data = {
+				'name': 'xiao',
+				'age': 22,
+				'sex': True,
+				'classmate': '3011',
+				'description': 'description',
+			}
+			# 实例化序列化器
+			serializer = StudentModelSerializers(data=data)
+			# 调用序列化器进行数据验证
+			# ret = serializer.is_valid()  # 不抛出异常
+			serializer.is_valid(raise_exception=True)  # 直接抛出异常，代码不往下执行，常用
+			# 获取校验以后的结果
+			# 返回数据
+			return JsonResponse(dict(serializer.validated_data))
+
+		def get4(self, request):
+			"""反序列化，验证完成后数据入库"""
+			# 接受客户端提交的数据
+			# data = json.dumps(request.body)
+			data = {
+				'name': 'xiao',
+				'age': 22,
+				'sex': False,
+				'classmate': '301',
+				'description': 'description',
+			}
+			# 实例化序列化器
+			serializer = StudentModelSerializers(data=data)
+			# 调用序列化器进行数据验证
+			serializer.is_valid(raise_exception=True)  # 直接抛出异常，代码不往下执行，常用
+			# 获取校验以后的结果
+			serializer.save()
+			# 返回数据
+			return JsonResponse(serializer.data, status=201)
+
+		def get(self, request):
+			"""反序列化，验证完成后更新数据入库"""
+			# 根据客户访问的url地址，获取pk值
+			try:
+				student = Student.objects.get(pk=4)
+			except Student.DoesNotExist:
+				return JsonResponse({'error': '参数不存在'}, status=400)
+			# 接受客户端提交的数据
+			data = {
+				'name': 'xiao~~~~~~',
+				'age': 32,
+				'sex': False,
+				'classmate': '301',
+				'description': 'description',
+			}
+
+			serializer = StudentModelSerializers(instance=student, data=data)
+			# 验证数据
+			serializer.is_valid(raise_exception=True)
+			# 入库
+			serializer.save()
+			# 返回结果
+			return JsonResponse(serializer.data, status=201)
 	```
+	- 序列化器常用字段类型
+	```
+	BooleanField	BooleanField()
+	NullBooleanField	NullBooleanField()
+	CharField	CharField(max_length=None, min_length=None, allow_blank=False, trim_whitespace=True)
+	EmailField	EmailField(max_length=None, min_length=None, allow_blank=False)
+	RegexField	RegexField(regex, max_length=None, min_length=None, allow_blank=False)
+	SlugField	SlugField(maxlength=50, min_length=None, allow_blank=False) 正则字段，验证正则模式 [a-zA-Z0-9-]+
+	URLField	URLField(max_length=200, min_length=None, allow_blank=False)
+	UUIDField	UUIDField(format=‘hex_verbose’) format: 1) 'hex_verbose' 如"5ce0e9a5-5ffa-654b-cee0-1238041fb31a" 2） 'hex' 如 "5ce0e9a55ffa654bcee01238041fb31a" 3）'int' - 如: "123456789012312313134124512351145145114" 4）'urn' 如: "urn:uuid:5ce0e9a5-5ffa-654b-cee0-1238041fb31a"
+	IPAddressField	IPAddressField(protocol=‘both’, unpack_ipv4=False, **options)
+	IntegerField	IntegerField(max_value=None, min_value=None)
+	FloatField	FloatField(max_value=None, min_value=None)
+	DecimalField	DecimalField(max_digits, decimal_places, coerce_to_string=None, max_value=None, min_value=None) max_digits: 最多位数 decimal_palces: 小数点位置
+	DateTimeField	DateTimeField(format=api_settings.DATETIME_FORMAT, input_formats=None)
+	DateField	DateField(format=api_settings.DATE_FORMAT, input_formats=None)
+	TimeField	TimeField(format=api_settings.TIME_FORMAT, input_formats=None)
+	DurationField	DurationField()
+	ChoiceField	ChoiceField(choices) choices与Django的用法相同
+	MultipleChoiceField	MultipleChoiceField(choices)
+	FileField	FileField(max_length=None, allow_empty_file=False, use_url=UPLOADED_FILES_USE_URL)
+	ImageField	ImageField(max_length=None, allow_empty_file=False, use_url=UPLOADED_FILES_USE_URL)
+	ListField	ListField(child=, min_length=None, max_length=None)
+	DictField	DictField(child=)
+	```
+	- 选项参数
+	```
+	max_length	最大长度
+	min_lenght	最小长度
+	allow_blank	是否允许为空
+	trim_whitespace	是否截断空白字符
+	max_value	最小值
+	min_value	最大值
+	```
+	- 通用参数
+	```
+	read_only	表明该字段仅用于序列化输出，默认False
+	write_only	表明该字段仅用于反序列化输入，默认False
+	required	表明该字段在反序列化时必须输入，默认True
+	default	反序列化时使用的默认值
+	allow_null	表明该字段是否允许传入None，默认False
+	validators	该字段使用的验证器
+	error_messages	包含错误编号与错误信息的字典
+	label	用于HTML展示API页面时，显示的字段名称
+	help_text	用于HTML展示API页面时，显示的字段帮助提示信息
+	```
+	- **模型类序列化器**
+	- ModelSerializer与常规的Serializer相同，但提供了：
+		- 基于模型类自动生成一系列字段
+		- 基于模型类自动为Serializer生成validators，比如unique_together
+		- 包含默认的create()和update()的实现
+	- 
 
 #### 视图
 1. 作用
