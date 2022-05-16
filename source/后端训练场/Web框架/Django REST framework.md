@@ -714,10 +714,282 @@ Django REST framework
 		- 基于模型类自动生成一系列字段
 		- 基于模型类自动为Serializer生成validators，比如unique_together
 		- 包含默认的create()和update()的实现
-	- 
+	```
+	文件: serializers.py
+
+	from rest_framework import serializers
+	from students_origin.models import Student
+
+	class StudentModelSerializers(serializers.ModelSerializer):
+		# 转换的字段声明
+		nickname = serializers.CharField(read_only=True, default='L圈圈')
+
+		# 如果当前继承的是ModelSerializer，需要模型类信息
+		class Meta:
+			model = Student  # 必填
+			# fields = "__all__"  # 必填，可以是字符串("__all__")、元组、列表
+			fields = ['id', 'name', 'sex', 'age', 'nickname']
+			read_only_fields = []  # 选填，只读字段，表示设置这里的字段只会在序列化阶段采用
+			extra_kwargs = {  # 选填，字段额外选项声明
+				"age": {
+					'max_value': 150,
+					'min_value': 10,
+					'error_messages': {
+						'min_value': '年龄最小值必须大于10岁',
+						'max_value': '年龄最大值必须小于150岁',
+					}
+				}
+			}
+	```
+	```
+	文件: views.py
+	import json
+
+	from django.views import View
+	from django.http.response import JsonResponse
+	from .serializers import StudentModelSerializers
+	from students_origin.models import Student
+
+
+	class StudentView1(View):
+		"""序列化一个对象"""
+
+		def get1(self, request):
+			# 获取数据集
+			student_list = Student.objects.first()
+			# 实例化系列化器
+			serializer = StudentModelSerializers(instance=student_list)
+			# 获取转换后的数据
+			data = serializer.data
+			# 响应数据
+			return JsonResponse(data=data, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+
+		"""序列化多个对象"""
+
+		def get2(self, request):
+			# 获取数据集
+			student_list = Student.objects.all()
+			# 实例化系列化器
+			serializer = StudentModelSerializers(instance=student_list, many=True)
+			# 获取转换后的数据
+			data = serializer.data
+			# 响应数据
+			return JsonResponse(data=data, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+
+		def get3(self, request):
+			"""反序列化，采用字段选项来验证数据"""
+			# 接受客户端提交的数据
+			# data = json.dumps(request.body)
+			data = {
+				'name': 'xiao',
+				'age': 22,
+				'sex': True,
+				'classmate': '3011',
+				'description': 'description',
+			}
+			# 实例化序列化器
+			serializer = StudentModelSerializers(data=data)
+			# 调用序列化器进行数据验证
+			# ret = serializer.is_valid()  # 不抛出异常
+			serializer.is_valid(raise_exception=True)  # 直接抛出异常，代码不往下执行，常用
+			# 获取校验以后的结果
+			# 返回数据
+			return JsonResponse(dict(serializer.validated_data))
+
+		def get4(self, request):
+			"""反序列化，验证完成后数据入库"""
+			# 接受客户端提交的数据
+			# data = json.dumps(request.body)
+			data = {
+				'name': 'xiao',
+				'age': 22,
+				'sex': False,
+				'classmate': '301',
+				'description': 'description',
+			}
+			# 实例化序列化器
+			serializer = StudentModelSerializers(data=data)
+			# 调用序列化器进行数据验证
+			serializer.is_valid(raise_exception=True)  # 直接抛出异常，代码不往下执行，常用
+			# 获取校验以后的结果
+			serializer.save()
+			# 返回数据
+			return JsonResponse(serializer.data, status=201)
+
+		def get(self, request):
+			"""反序列化，验证完成后更新数据入库"""
+			# 根据客户访问的url地址，获取pk值
+			try:
+				student = Student.objects.get(pk=4)
+			except Student.DoesNotExist:
+				return JsonResponse({'error': '参数不存在'}, status=400)
+			# 接受客户端提交的数据
+			data = {
+				'name': 'xiao~~~~~~',
+				'age': 32,
+				'sex': False,
+				'classmate': '301',
+				'description': 'description',
+			}
+
+			serializer = StudentModelSerializers(instance=student, data=data)
+			# 验证数据
+			serializer.is_valid(raise_exception=True)
+			# 入库
+			serializer.save()
+			# 返回结果
+			return JsonResponse(serializer.data, status=201)
+
+
+	class StudentView(View):
+		"""模型序列化器"""
+
+		def get1(self, request):
+			"""序列化1个对象"""
+			# 获取数据集
+			student = Student.objects.first()
+			# 实例化系列化器
+			serializer = StudentModelSerializers(instance=student)
+			# 获取转换后的数据
+			data = serializer.data
+			# 响应数据
+			return JsonResponse(data=data, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+
+		def get2(self, request):
+			"""序列化多个对象"""
+			# 获取数据集
+			student_list = Student.objects.all()
+			# 实例化系列化器
+			serializer = StudentModelSerializers(instance=student_list, many=True)
+			# 获取转换后的数据
+			data = serializer.data
+			# 响应数据
+			return JsonResponse(data=data, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+
+		def get3(self, request):
+			"""反序列化，采用字段选项来验证数据"""
+			# 接受客户端提交的数据
+			# data = json.dumps(request.body)
+			data = {
+				'name': 'xiao',
+				'age': 226,
+				'sex': True,
+				'classmate': '3011',
+				'description': 'description',
+			}
+			# 实例化序列化器
+			serializer = StudentModelSerializers(data=data)
+			# 调用序列化器进行数据验证
+			# ret = serializer.is_valid()  # 不抛出异常
+			serializer.is_valid(raise_exception=True)  # 直接抛出异常，代码不往下执行，常用
+			# 获取校验以后的结果
+			# 返回数据
+			return JsonResponse(dict(serializer.validated_data))
+
+		def get4(self, request):
+			"""反序列化，验证完成后数据入库"""
+			# 接受客户端提交的数据
+			# data = json.dumps(request.body)
+			data = {
+				'name': 'xiao',
+				'age': 22,
+				'sex': False,
+				'classmate': '301',
+				'description': 'description',
+			}
+			# 实例化序列化器
+			serializer = StudentModelSerializers(data=data)
+			# 调用序列化器进行数据验证
+			serializer.is_valid(raise_exception=True)  # 直接抛出异常，代码不往下执行，常用
+			# 获取校验以后的结果
+			serializer.save()
+			# 返回数据
+			return JsonResponse(serializer.data, status=201)
+
+		def get(self, request):
+			"""反序列化，验证完成后更新数据入库"""
+			# 根据客户访问的url地址，获取pk值
+			try:
+				student = Student.objects.get(pk=4)
+			except Student.DoesNotExist:
+				return JsonResponse({'error': '参数不存在'}, status=400)
+			# 接受客户端提交的数据
+			data = {
+				'name': 'xiao323',
+				'age': 32,
+				'sex': False,
+				'classmate': '301',
+				'description': 'description',
+			}
+
+			serializer = StudentModelSerializers(instance=student, data=data)
+			# 验证数据
+			serializer.is_valid(raise_exception=True)
+			# 入库
+			serializer.save()
+			# 返回结果
+			return JsonResponse(serializer.data, status=201)
+	```
 
 #### 视图
-1. 作用
+1. 视图中调用Http请求和响应处理类
+	- 什么时候声阴的序列化器需要继承序列化器基类Serializer,什么时候继承模型序列化器类ModelSerializer?
+		- 继承序列化器类Serializer
+			- 字段声明
+			- 验证
+			- 添加/保存数据功能
+		- 继承模型序列化器类Modelseria1izer
+			- 字段声明[可近，看黹要]
+			- Meta声明
+			- 验证
+			- 添加/保存数据功能[可选]
+	- 看数据是否从mysql数据库中获取，如果是则使用ModelSerializer,不是则使用Serializer
+	- **http请求响应**
+		- drf除了在数据序列化部分简写代码以外,还在视图中提供了简写操作,所以在django有的django.views.View基础上,d倒封装了多个视图子类出来提供给我们使用。
+		- drf提供的视图的主要作用:
+			- 控制序列化器的执行(检验、保存、转换数据)
+			- 控制数据库查询的执行
+			- 调用请求类和响应类（这两个类也是由drf帮我们再次扩展了一些功能类)
+	- 请求与响应
+		- 内容协商:drf在django原有的基础上,新增了—个request对象继承到了APIView视图类,并在django原有的HttpResponse响应类的基础上实现了一个子类rest_framework.response.Response响应类。这两个类,都是基于内容协商来完成数据的格式转换的。
+		- request->parser解析类->识别客户端请求头中的Content-Type完成数据转换成>类字典(QueryDict,字典的子类)
+		- response->renderer渲染类->识别客户端请求头的Accept来提取客户端期望返回的数据格式,->转换成客户端的期望格式数据。如果客户端没有申明Accept，则按照Content-Type格式进行转换
+		- **Request**
+		- REST framework传入视图的requests对象不再是Django默认的HttpRequest象,而是REST framework提供的扩展了HttpRequest类的Requests类的对象。
+		- REST framework提供了Parser解析器,在接收到请求后会自动根据Content-Type指明的请求数据类型(如JSON.表单等)将请求数据进行parse解析,解析为类字典[QueryDict]对象保存到Request对象中。
+		- Request对象的数据是自动根据前端发送数据的格式进行解析之后的结果,
+		- 无论前端发送的哪种格式的数据,我们都可以以统一的方式读取数据
+		- 基本属性
+			- .data
+				- request.data返回解析之后的请求体数据。类似于Django标准的 request.Post和request.FILES属性,但提供如下特性:
+					- 包含了解析之后的文件和非文件数据
+					- 包含了对POST、PUT、PATCH请求方式解析后的数据
+					- 利用了REST framework的parsers解析器,不仅支持表单类型数据,也支持JSON据
+			- .query_params（查询参数、查询字符串）
+				- request.query_params与Django标准的request.Get相同,只是更换了更正确的名称而已,
+			- request._request
+				- 获取django封装的Request对象
+		- **Response**
+			```
+			rest_framework.response.Response
+			```
+			- REST framework供了一个响应类 Response，使用该类构造响应对象时,响应的具体数据内容会被转换(render染器)成符合前端需求的类型。
+			- REST framework供了Renderer渲染器,用来根据请求头中的Accept (接收数据类型声明)来自动转换响应数据到对应格式。如果前端请求中未进行Accept明,则会采用Content-Type式处理响应数据,我们可以通过配置来修改默认响应格式。
+			- 可以在rest framework.settings 找所有的dr认配置项
+			```
+			REST FRAMEWORK={
+			'DEFAULT_RENDERER_CLASSES':( # 默认响应渲染类
+				'rest_framework.renderers.JSONRenderer, # json渲染器,返回json数据
+				'rest_framework.renderers.BrowsableAPIRenderer, # 浏览器API染器,返同调试界面
+				)
+			}
+			```
+
+
+- 
+
+
+2. 作用
 	- 控制序列化器的执行（检验、保存、转换数据）
 	- 控制数据库模型的操作
 1. 两个视图基类
