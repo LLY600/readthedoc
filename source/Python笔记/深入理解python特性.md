@@ -1188,7 +1188,7 @@
 	pprint.pprint(mapping) 
 	{'a': 23, 'b': 42, 'c': 12648430, 'd': set([1, 2, 3])}
 	```
-#### Python式高效技巧
+#### Python高效技巧
 1. 探索Python的模块和对象
 	- 使用 Python内置的dir()函数能直接在Python REPL中访问这些信息
 	```
@@ -1350,7 +1350,42 @@ True
 	- 机制原理：
 	- 实现 Intern 机制的方式非常简单，就是通过维护一个字符串储蓄池，这个池子是一个字典结构，如果字符串已经存在于池子中就不再去创建新的字符串，直接返回之前创建好的字符串对象，如果之前还没有加入到该池子中，则先构造一个字符串对象，并把这个对象加入到池子中去，方便下一次获取。
 	- 但并非全部的字符串都会采用 intern 机制，只有包括下划线、数字、字母的字符串才会被 intern，同时字符数不能超过20个，因为如果超过20个字符的话，Python 解释器就会认为这个字符串不常用，不用放入字符串池子中。
+#### Monkey Patch
+- Monkey Patch允许在程序运行期间动态的修改一个类或者模块。
+- 举个例子，在项目很多地方都用了import json，后来发现ujson比Python自带的json快很多，于是问题来了，几十几百个文件难道要一个一个的把import json替换成import ujson as json吗？那也太痛苦了，其实只需要在进程开始的地方使用monkey patch**就行了，它是会影响整个进程空间的，同一进程空间中一个module只会被执行一次。
+```
+# file:json_serialize.py
+import time
+import json
 
+def run_time(func):
+    def inner(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f'程序用时：{end_time - start_time}')
+        return result
+    return inner
+
+@run_time
+def json_dumps(obj):
+    return json.dumps(obj)
+
+test_dict = {i: 1 for i in range(1, 10000001)}
+
+r1 = json_dumps(test_dict)
+```
+```
+import ujson
+from json_serialize import json_dumps, test_dict
+
+def monkey_patch_json():
+    json.dumps = ujson.dumps
+
+monkey_patch_json()
+print(f'使用猴子补丁之后json.dumps编码用时:', end='')
+r2 = json_dumps(test_dict)
+```
 
 
 
