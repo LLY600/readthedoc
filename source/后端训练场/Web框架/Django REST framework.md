@@ -975,29 +975,59 @@ Django REST framework
 			```
 			- REST framework供了一个响应类 Response，使用该类构造响应对象时,响应的具体数据内容会被转换(render染器)成符合前端需求的类型。
 			- REST framework供了Renderer渲染器,用来根据请求头中的Accept (接收数据类型声明)来自动转换响应数据到对应格式。如果前端请求中未进行Accept明,则会采用Content-Type式处理响应数据,我们可以通过配置来修改默认响应格式。
-			- 可以在rest framework.settings 找所有的dr认配置项
+			- 可以在源码rest_framework.settings 找所有的drf默认配置项
 			```
 			REST FRAMEWORK={
 			'DEFAULT_RENDERER_CLASSES':( # 默认响应渲染类
 				'rest_framework.renderers.JSONRenderer, # json渲染器,返回json数据
-				'rest_framework.renderers.BrowsableAPIRenderer, # 浏览器API染器,返同调试界面
+				'rest_framework.renderers.BrowsableAPIRenderer, # 浏览器API染器,返同调试界面，否则只能看到JSON字符串形式
 				)
 			}
 			```
-
-
-- 
-
-
-2. 作用
+			- 构造方式
+				- Response(data,status=None,template_name=None,headers=None,content_type=None)
+				- drf的响应处理类和请求处理类不一样，Response就是django的HttpResponse响应处理类的子类。
+				- data数据不要是render处理之后的数据，只需传递oython的内建类型数据即可，REST framework会使用renderer渲染器处理data。
+				- data不能是复杂结构的数据，如Django的模型类对象，对于这样的数据我们可以使用Serializer序列化器序列化处理后(转为了Python字典类型)再传递给data参数.
+				- 参数说明：
+					- data:为响应准备的序列化处理后的数据
+					- status:状态码，默认200；
+					- template_name:模板名称，如果使用HTMLRenderer时需指明：
+					- headers:用于存放响应头信息的字典；
+					- content_type:响应数据的Content-Type,通常此参数无需传递，REST framework:会根据前端所需类型数据来设置该参数。
+			- response对象的属性（工作很少用）
+				- .data
+				- 传给response对象的序列化后，但尚未render处理的数据
+				- .status code
+				- 状态码的数字
+				- .content
+				- 经过render处理后的响应数据
+			- 状态码
+				- 为了方便设置状态码，REST framewrok在rest_framework.status模块中提供了常用http状态码的常量。
+2. 视图作用
 	- 控制序列化器的执行（检验、保存、转换数据）
 	- 控制数据库模型的操作
-1. 两个视图基类
-	- **APIView[基本视图类]**
-	- **GenericAPIView[通用视图类]**
-1. 5个视图扩展类
-2. GenericAPIView的视图子类
-3. 视图集
+1. 普通视图
+	- 两个视图基类
+		- APIView基本视图类
+			```
+			rest_framework.views.APIView
+			```
+			- APIView是REST framework提供的所有视图的基类，继承自Diango的view父类。
+			- APIView与view的不同之处在于：
+				- 传入到视图方法中的是REST framework的Request对象，而不是Django的HttpRequeset对象；
+				- 视图方法可以返回REST framework的Response对象，视图会为响应数据设置(render)符合前端期望要求的格式：
+				- 任何APIException异常都会被捕获到，并且处理成合适格式的响应信息返回给客户端，django的View中所有异常全部以HTML格式显示，drf的APIVlewi或者APIView的子类会自动根据客户端的Accepti进行错误信息的格式转换。
+				- 重新声明了一个新的as_view方法并在dispatch()进行路由分发前，会对请求的客户端进行身份认证、权限检查、流量控制。
+			- APIView除了继承了View原有的属性方法以外，还新增了类属性：
+				- authentication classes列表或元组，身份认证类
+				- permissoin classes列表或元组，权限检查类
+				- throttle classes列表或元祖，流量控制类
+			- 在APIView中仍以常规的类视图定义方法来实现get()、post()或者其他请求方式的方法。
+		GenericAPIView通用视图类
+	- 五个视图扩展类
+	- 九个视图子类
+3. 视图集ViewSet
 #### 路由Routers
 1. REST framework提供了两个router
 	- SimpleRouter
