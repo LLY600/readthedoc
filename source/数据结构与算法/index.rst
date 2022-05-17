@@ -3,4 +3,5 @@
 
 .. toctree::
     :maxdepth: 2
-    :numbered: 2
+
+    二叉树
