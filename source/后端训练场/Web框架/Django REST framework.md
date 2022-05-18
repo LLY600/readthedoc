@@ -1024,7 +1024,155 @@ Django REST framework
 				- permissoin classes列表或元组，权限检查类
 				- throttle classes列表或元祖，流量控制类
 			- 在APIView中仍以常规的类视图定义方法来实现get()、post()或者其他请求方式的方法。
-		GenericAPIView通用视图类
+			```
+			文件: serializers.py
+
+			from rest_framework import serializers
+			from students_origin.models import Student
+
+			class StudentModelSerializers(serializers.ModelSerializer):
+				class Meta:
+					model = Student
+					fields = "__all__"
+			```
+			```
+			文件: views.py
+			
+			from rest_framework import status
+			from rest_framework.response import Response
+			from rest_framework.views import APIView
+
+			from students_origin.models import Student
+			from viewdemo.serializers import StudentModelSerializers
+
+
+			class StudentAPIView(APIView):
+				def get(self, request):
+					student_list = Student.objects.all()
+					serializer = StudentModelSerializers(instance=student_list, many=True)
+					return Response(serializer.data, status=status.HTTP_200_OK)
+
+				def post(self, request):
+					serializer = StudentModelSerializers(data=request.data)
+					serializer.is_valid(raise_exception=True)
+					serializer.save()
+					return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+			class StudentInfoAPIView(APIView):
+				def get(self, request, pk):
+					try:
+						student = Student.objects.get(pk=pk)
+					except Student.DoesNotExist:
+						return Response(status=status.HTTP_404_NOT_FOUND)
+					serializer = StudentModelSerializers(instance=student)
+					return Response(serializer.data)
+
+				def put(self, request, pk):
+					try:
+						student = Student.objects.get(pk=pk)
+					except Student.DoesNotExist:
+						return Response(status=status.HTTP_404_NOT_FOUND)
+					serializer = StudentModelSerializers(instance=student, data=request.data)
+					serializer.is_valid(raise_exception=True)
+					serializer.save()
+					return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+				def post(self, request):
+					serializer = StudentModelSerializers(data=request.data)
+					serializer.is_valid(raise_exception=True)
+					serializer.save()
+					return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+				def delete(self, request, pk):
+					try:
+						Student.objects.get(pk=pk).delete()
+					except Student.DoesNotExist:
+						pass
+					return Response(status=status.HTTP_204_NO_CONTENT)
+			```
+			```
+			文件: urls.py
+			
+			from django.urls import path, re_path
+			from . import views
+
+			urlpatterns = [
+				path('students/', views.StudentAPIView.as_view()),
+				re_path(r'^students/(?P<pk>\d+)/$', views.StudentInfoAPIView.as_view())
+			]
+			```
+		- GenericAPIView通用视图类
+			- 通用视图类主要作用就是把视图中的独特的代码抽取出来，让视图方法中的代码更加通用，方便把通用代码进行简写。
+			```
+			rest_framework.generics.GenericAPIView
+			```
+			- 继承自APIView,主要增加了操作序列化器和数据库查询的方法，作用是为下面Mixi扩展类的执行提供方法支持。通常在使用时，可搭配一个或多个Mixin扩展类。
+			- 提供的关于序列化器使用的属性与方法
+				- **属性：**
+				- serializer_class指明视图使用的序列化器类
+				- **方法：**
+				- get_serializer_class(self)
+				- 当出现一个视图类中调用多个序列化器时，那么可以通过条件判断在get serializer_class方法中通过返回不同的序列化器类名就可以让视图方法执行不同的序列化器对象了。
+				- 返回序列化器类，默认返回serializer_class,可以重写
+				- get_serializer(self,args,*kwargs)
+				- 返回序列化器对像，主要用来提供给Mixi扩展类使用，如果我们在视图中想要获取序列化器对像，也可以直接调用此方法。
+				- 注意，该方法在提供序列化器对象的时候，会向序列化器对象的context属性补充三个数据：request、format、view,这三个数据对象可以在定义序列化器时使用。
+				- request当前视图的请求对象
+				- view当前请求的类视图对象
+				- format当前请求期望返回的数据格式
+			- 提供的关于数据库查询的属性与方法
+				- **属性：**
+				- queryset指明使用的数据查询集
+				- **方法：**
+				- get_queryset(self)
+				- 返回视图使用的查询集，主要用来提供给Mix扩展类使用，是列表视图与详情视图获取数据的基础，默认返回queryset属性，可以重写
+				- get_object(self)
+				- 返回详情视图所需的模型类数据对象，主要用来提供给Mixi扩展类使用。
+				- 在试图中可以调用该方法获取详情信息的模型类对象。
+				- 若详情访问的模型类对象不存在，会返回404。
+				- 该方法会默认使用APIView提供的check_object_permissions方法检查当前对象是否有权限被访问。
+			- 其他可以设置的属性
+			pagination_class指明分页控制类
+			filter_backends指明数据过滤控制后端
+			```
+			class StudentGenericAPIView(GenericAPIView):
+				queryset = Student.objects.all()
+				serializer_class = StudentModelSerializers
+
+				def get(self, request):
+					queryset = self.get_queryset()  # GenericAPIView提供的方法
+					serializer = self.get_serializer(instance=queryset, many=True)
+					return Response(serializer.data)
+
+				def post(self, request):
+					serializer = self.get_serializer(data=request.data)
+					serializer.is_valid(raise_exception=True)
+					serializer.save()
+					return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+			class StudentInfoGenericAPIView(GenericAPIView):
+				queryset = Student.objects.all()
+				serializer_class = StudentModelSerializers
+
+				def get(self, request, pk):
+					instance = self.get_object()
+					serializer = self.get_serializer(instance=instance)
+					return Response(serializer.data)
+
+				def put(self, request, pk):
+					instance = self.get_object()
+					serializer = self.get_serializer(instance=instance, data=request.data)
+					serializer.is_valid(raise_exception=True)
+					serializer.save()
+					return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+				def delete(self, request, pk):
+					self.get_object().delete()
+					return Response(status=status.HTTP_204_NO_CONTENT)
+			```
+			
 	- 五个视图扩展类
 	- 九个视图子类
 3. 视图集ViewSet
