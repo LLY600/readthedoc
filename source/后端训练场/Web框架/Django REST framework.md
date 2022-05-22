@@ -930,7 +930,352 @@ Django REST framework
 			# 返回结果
 			return JsonResponse(serializer.data, status=201)
 	```
+1. 序列化器嵌套
+- 在序列化器使用过程中，一般个序列化器对应一个模型数据。往往因为模型之间会存在外键关联，所以一般在输出数据时不仅要获取当前模型的数据，甚至其他模型的数据也需要同时返回，这种情况下，我们可以通过序列化器嵌套调用的方式，除帮我们把当前模型数据进行转换以外，还可以同时转换外键对应的模型数据。
+```
+file:models.py
 
+from datetime import datetime
+from django.db import models
+
+"""
+db_constraint=False，表示关闭物理外键
+"""
+
+
+class Student(models.Model):
+    name = models.CharField(max_length=50, verbose_name='姓名')
+    age = models.SmallIntegerField(verbose_name='年龄')
+    sex = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'student'
+
+    def __str__(self):
+        return self.name
+
+
+class Course(models.Model):
+    name = models.CharField(max_length=50, verbose_name='课程名称')
+    teacher = models.ForeignKey('Teacher', on_delete=models.DO_NOTHING, related_name='course', db_constraint=False)
+
+    class Meta:
+        db_table = 'course'
+
+    def __str__(self):
+        return self.name
+
+
+class Teacher(models.Model):
+    name = models.CharField(max_length=50, verbose_name='姓名')
+    sex = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'teacher'
+
+    def __str__(self):
+        return self.name
+
+
+class Achievement(models.Model):
+    score = models.DecimalField(default=0, max_digits=4, decimal_places=1, verbose_name='成绩')
+    student = models.ForeignKey(Student, on_delete=models.DO_NOTHING, related_name='s_achievement', db_constraint=False)
+    course = models.ForeignKey(Course, on_delete=models.DO_NOTHING, related_name='c_achievement', db_constraint=False)
+    create_dtime = models.DateTimeField(auto_created=datetime.now)
+
+    class Meta:
+        db_table = 'achievement'
+
+    def __str__(self):
+        return self.score
+```
+```
+准备测试数据
+
+INSERT INTO teacher(id,name,sex)VALUES(1,'李老师',0);
+INSERT INTO teacher(id,name,sex)VALUES(2,'曹老师',1);
+INSERT INTO teacher(id,name,sex)VALUES(3,'许老师',1);
+
+INSERT INTO student(id,name,age,sex)VALUES(1,'小明',18,1);
+INSERT INTO student(id,name,age,sex)VALUES(2,'小黑',18,1);
+INSERT INTO student(id,name,age,sex)VALUES(3,'小白',18,1);
+INSERT INTO student(id,name,age,sex)VALUES(4,'小红',17,0);
+INSERT INTO student(id,name,age,sex)VALUES(5,'小程',18,0);
+INSERT INTO student(id,name,age,sex)VALUES(6,'小年',16,0);
+INSERT INTO student(id,name,age,sex)VALUES(7,'小明2',18,1);
+INSERT INTO student(id,name,age,sex)VALUES(8,'小黑2',22,1);
+INSERT INTO student(id,name,age,sex)VALUES(9,'小白2',18,1);
+INSERT INTO student(id,name,age,sex)VALUES(10,'小红2',17,0);
+INSERT INTO student(id,name,age,sex)VALUES(11,'小程2',18,0);
+INSERT INTO student(id,name,age,sex)VALUES(12,'小灰',16,0)
+
+INSERT INTO course(id,name,teacher_id)VALUES(1,'python',1);
+INSERT INTO course(id,name,teacher_id)VALUES(2,'python进阶',2);
+INSERT INTO course(id,name,teacher_id)VALUES(3,'python高级',3);
+INSERT INTO course(id,name,teacher_id)VALUES(4,'django',2);
+INSERT INTO course(id,name,teacher_id)VALUES(5,'django进阶',3);
+INSERT INTO course(id,name,teacher_id)VALUES(6,'django高级',3);
+
+INSERT INTO achievement (create_dtime,id,score,course_id,student_id)VALUES ('2021-06-16 01:18:25.496880',1,100.0,1,1);
+INSERT INTO achievement (create_dtime,id,score,course_id,student_id)VALUES ('2021-06-16 01:18:25.496880',2,109.8,2,2);
+INSERT INTO achievement (create_dtime,id,score,course_id,student_id)VALUES ('2021-06-16 01:18:25.496880',3,108.8,3,3);
+INSERT INTO achievement (create_dtime,id,score,course_id,student_id)VALUES ('2021-06-16 01:18:25.496880',4,78.0,4,4);
+INSERT INTO achievement (create_dtime,id,score,course_id,student_id)VALUES ('2021-06-16 01:18:25.496880',5,78.8,5,5);
+INSERT INTO achievement (create_dtime,id,score,course_id,student_id)VALUES ('2021-06-16 01:18:25.496880',6,78.0,6,6);
+INSERT INTO achievement (create_dtime,id,score,course_id,student_id)VALUES ('2021-06-16 01:18:25.496880',7,78.0,1,7);
+INSERT INTO achievement (create_dtime,id,score,course_id,student_id)VALUES ('2021-06-16 01:18:25.496880',8,88.0,2,8);
+```
+- 一对多或者多对多的序列化器嵌套返回多个数据情况
+- 默认情况下，模型经过序列化器的数据转换，对于外键的信息，仅仅把数据库里面的外键ID
+```
+文件: serializers.py
+
+from rest_framework import serializers
+from school.models import Teacher, Student, Achievement, Course
+
+
+class TeacherModelSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Teacher
+        fields = "__all__"
+
+
+class CourseModelSerializers(serializers.ModelSerializer):
+    teacher = TeacherModelSerializers()
+
+    class Meta:
+        model = Course
+        fields = "__all__"
+
+
+class AchievementModelSerializers(serializers.ModelSerializer):
+    course = CourseModelSerializers()
+
+    class Meta:
+        model = Achievement
+        fields = "__all__"
+
+
+class StudentModelSerializers(serializers.ModelSerializer):
+    # 序列化器嵌套
+    # 名称不能随便写，必须是外键名称
+    # 如果多条数据，需要加many=True
+    s_achievement = AchievementModelSerializers(many=True)
+
+    class Meta:
+        model = Student
+        # fields = "__all__"
+        fields = ['id', 'name', 's_achievement']
+```
+```
+返回结果如下，嵌套很复杂
+
+[
+	{
+	       "id": 1,
+	       "name": "小明",
+	       "s_achievement": [
+	           {
+	               "id": 1,
+	               "course": {
+	                   "id": 1,
+	                   "teacher": {
+	                       "id": 1,
+	                       "name": "李老师",
+	                       "sex": false
+	                   },
+	                   "name": "python"
+	               },
+	               "create_dtime": "2021-06-16T01:18:25.496880Z",
+	               "score": "100.0",
+	               "student": 1
+	           },
+	           {
+	               "id": 9,
+	               "course": {
+	                   "id": 1,
+	                   "teacher": {
+	                       "id": 1,
+	                       "name": "李老师",
+	                       "sex": false
+	                   },
+	                   "name": "python"
+	               },
+	               "create_dtime": "2021-06-16T01:18:25.496880Z",
+	               "score": "99.0",
+	               "student": 1
+	           }
+	       ]
+	   }
+]
+```
+- source选项取代主键数值，在多对一或者一对一的序列化器嵌套中，通过sourc选项，直接通过外键指定返回的某个字段数据
+```
+文件: serializers.py
+
+from rest_framework import serializers
+from school.models import Teacher, Student, Achievement, Course
+
+
+class TeacherModelSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Teacher
+        fields = "__all__"
+
+
+class CourseModelSerializers(serializers.ModelSerializer):
+    teacher = TeacherModelSerializers()
+
+    class Meta:
+        model = Course
+        fields = "__all__"
+
+
+class AchievementModelSerializers(serializers.ModelSerializer):
+    course_name = serializers.CharField(source='course.name', default='课程名称')
+    teacher_name = serializers.CharField(source='course.teacher.name', default='老师名称')
+
+    class Meta:
+        model = Achievement
+        fields = "__all__"
+
+
+class StudentModelSerializers(serializers.ModelSerializer):
+    # 序列化器嵌套
+    # 名称不能随便写，必须是外键名称
+    # 如果多条数据，需要加many=True
+    s_achievement = AchievementModelSerializers(many=True)
+
+    class Meta:
+        model = Student
+        # fields = "__all__"
+        fields = ['id', 'name', 's_achievement']
+```
+```
+使用depth指定嵌套深度
+文件: serializers.py
+from rest_framework import serializers
+from school.models import Teacher, Student, Achievement, Course
+
+
+class TeacherModelSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Teacher
+        fields = "__all__"
+
+
+class CourseModelSerializers(serializers.ModelSerializer):
+    teacher = TeacherModelSerializers()
+
+    class Meta:
+        model = Course
+        fields = "__all__"
+
+
+class AchievementModelSerializers(serializers.ModelSerializer):
+    course_name = serializers.CharField(source='course.name', default='课程名称')
+    teacher_name = serializers.CharField(source='course.teacher.name', default='老师名称')
+
+    class Meta:
+        model = Achievement
+        fields = "__all__"
+
+
+class AchievementModelSerializers1(serializers.ModelSerializer):
+    class Meta:
+        model = Achievement
+        fields = "__all__"
+        # depth = 1  # 自动往下再嵌套一层
+        depth = 2  # 自动往下再嵌套两层
+        # 层级深度
+        # 成绩--》课程 1
+        # 成绩--》课程--》老师 2
+
+
+class StudentModelSerializers(serializers.ModelSerializer):
+    # 序列化器嵌套
+    # 名称不能随便写，必须是外键名称
+    # 如果多条数据，需要加many=True
+    s_achievement = AchievementModelSerializers1(many=True)
+
+    class Meta:
+        model = Student
+        # fields = "__all__"
+        fields = ['id', 'name', 's_achievement']
+```
+```
+# 自定义模型方法
+models.py
+
+from datetime import datetime
+
+from django.db import models
+
+"""
+db_constraint=False，表示关闭物理外键
+"""
+
+
+class Student(models.Model):
+    name = models.CharField(max_length=50, verbose_name='姓名')
+    age = models.SmallIntegerField(verbose_name='年龄')
+    sex = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'student'
+
+    def __str__(self):
+        return self.name
+ 
+    @property
+    def achievement(self):
+        # return self.s_achievement.values()
+        # 如果只想要学生名称
+        return self.s_achievement.values('student__name')
+
+
+class Course(models.Model):
+    name = models.CharField(max_length=50, verbose_name='课程名称')
+    teacher = models.ForeignKey('Teacher', on_delete=models.DO_NOTHING, related_name='course', db_constraint=False)
+
+    class Meta:
+        db_table = 'course'
+
+    def __str__(self):
+        return self.name
+
+
+class Teacher(models.Model):
+    name = models.CharField(max_length=50, verbose_name='姓名')
+    sex = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'teacher'
+
+    def __str__(self):
+        return self.name
+
+
+class Achievement(models.Model):
+    score = models.DecimalField(default=0, max_digits=4, decimal_places=1, verbose_name='成绩')
+    student = models.ForeignKey(Student, on_delete=models.DO_NOTHING, related_name='s_achievement', db_constraint=False)
+    course = models.ForeignKey(Course, on_delete=models.DO_NOTHING, related_name='c_achievement', db_constraint=False)
+    create_dtime = models.DateTimeField(auto_created=datetime.now)
+
+    class Meta:
+        db_table = 'achievement'
+
+    def __str__(self):
+        return f'{self.score}'
+```
+```
+class StudentModelSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        # fields = "__all__"
+        fields = ['id', 'name', 'achievement']
+```
+- 
 #### 视图
 1. 视图中调用Http请求和响应处理类
 	- 什么时候声阴的序列化器需要继承序列化器基类Serializer,什么时候继承模型序列化器类ModelSerializer?
@@ -1204,11 +1549,781 @@ Django REST framework
 				return self.destroy(request, pk=pk)
 		```
 	- 九个视图子类
+		- 上面的接口代码还可以续更加的精简，drf在使用GenericAPIView和Mixins进行组合以后，还是供了视图子类。
+		- 视图子类是通用视图类和模型甘扩展类的子类，提供了各种的视图方法调用mixins操作
+			- ListAPIView = GenericAPIView + ListModelMixin 获取多条数据的视图方法
+			- CreateAPIView = GenericAPIView + CreateModelMixin 添加一条数据的视图方法
+			- RetrieveAPIV1ew=GenericAPIView + RetrieveModeLMiXin 获取一条数据的视图方法
+			- UpdateAPIView = GenericAPIView + UpdateModelMixin 更新一条数据的视图方法
+			- DestroyAPIView  = GenericAPIView + DestroyModelMixin 删除一条数据的视图方法
+		- 组合视图子类
+			- ListcreateAPIview = ListAPIView + CreateAPIView
+			- RetrieveUpdateAPIView = RetrieveAPIView + UpdateAPIView
+			- RetrieveDestroyAPIView = RetrieveAPIView + DestroyAPIView
+			- RetrieveUpdateDestroyAPIView = RetrieveAPIView + UpdateAPIView + DestroyAPIView
+		```
+		file:views.py
+		
+		from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView
+		from rest_framework.generics import ListCreateAPIView,RetrieveUpdateAPIView
+		# class StudentView(ListAPIView, CreateAPIView):
+		class StudentView(ListCreateAPIView):
+			queryset = Student.objects.all()
+			serializer_class = StudentModelSerializers
+
+
+		# class StudentInfoView(RetrieveAPIView, UpdateAPIView):
+		class StudentInfoView(RetrieveUpdateAPIView):
+			queryset = Student.objects.all()
+			serializer_class = StudentModelSerializers
+		```
 3. 视图集ViewSet
+	- 使用视图集ViewSet,可以将一系列视图相关的代码逻辑和相关的http请求动作封装到一个类中：
+		- list()提供一组数据
+		- retrieve()提供单个数据
+		- create)创建数据
+		- update()保存数据
+		- destory()删除数据
+	- ViewSet视图集类不再限制视图方法名只允许get()、post()等这种情况了而是实现允许开发者根据自己的需要定义自定义方法名，例如list)、create()等，然后经过路由中使用htp和这些视图方法名进行绑定调用。
+	- 视图集只在使用as_view()方法的时候，才会将action动作与具体请求方式对应上。
+	- 基本视图集ViewSet解决了APIview中代码重复的问题
+		```
+		file:view.py
+		from rest_framework.viewsets import ViewSet
+		
+		class StudentViewSet(ViewSet):
+			"""
+			可以把所有操作写在一个类里面
+			"""
+
+			def get_list(self, request):
+				student_list = Student.objects.all()
+				serializer = StudentModelSerializers(instance=student_list, many=True)
+				return Response(serializer.data)
+
+			def post(self, request):
+				serializer = StudentModelSerializers(data=request.data)
+				serializer.is_valid(raise_exception=True)
+				serializer.save()
+				return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+			def get_student_info(self, request, pk):
+				try:
+					student = Student.objects.get(pk=pk)
+				except Student.DoesNotExist:
+					return Response(status=status.HTTP_404_NOT_FOUND)
+				serializer = StudentModelSerializers(instance=student)
+				return Response(serializer.data)
+
+			def update(self, request, pk):
+				try:
+					student = Student.objects.get(pk=pk)
+				except Student.DoesNotExist:
+					return Response(status=status.HTTP_404_NOT_FOUND)
+				serializer = StudentModelSerializers(instance=student, data=request.data)
+				serializer.is_valid(raise_exception=True)
+				serializer.save()
+				return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+			def delete(self, request, pk):
+				pass
+		```
+		```
+		file:urls.py
+		
+		urlpatterns = [
+			path('students5/', views.StudentViewSet.as_view({
+				'get': 'get_list',
+				'post': 'post',
+			})),L
+			re_path(r'^students5/(?P<pk>\d+)/$', views.StudentViewSet.as_view({
+				'get': 'get_student_info',
+				'put': 'update',
+			})),
+		]
+		```
+	- 通用视图集GenericViewSet解决了ViewSet中代码重复的问题
+		```
+		file:urls.py
+		
+		urlpatterns = [
+			path('students6/', views.StudentGenericViewSet.as_view({
+				'get': 'list',
+				'post': 'create',
+			})),
+
+			re_path(r'^students6/(?P<pk>\d+)/$', views.StudentGenericViewSet.as_view({
+				'get': 'retrieve',
+				'put': 'update',
+				'delete': 'destory',
+			})),
+		]
+		```
+		```
+		file:views.py
+		
+		class StudentGenericViewSet(GenericViewSet):
+		queryset = Student.objects.all()
+		serializer_class = StudentModelSerializers
+
+		def list(self, request):
+			queryset = self.get_queryset()
+			serializer = self.get_serializer(instance=queryset, many=True)
+			return Response(serializer.data)
+
+		def create(self, request):
+			serializer = self.get_serializer(data=request.data)
+			serializer.is_valid(raise_exception=True)
+			serializer.save()
+			return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+		def retrieve(self, request, pk):
+			instance = self.get_object()
+			serializer = self.get_serializer(instance=instance)
+			return Response(serializer.data)
+
+		def update(self, request, pk):
+			instance = self.get_object()
+			serializer = self.get_serializer(instance=instance, data=request.data)
+			serializer.is_valid(raise_exception=True)
+			serializer.save()
+			return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+		def destory(self, request, pk):
+			self.get_object().delete()
+			return Response(status=status.HTTP_204_NO_CONTENT)
+		```
+	- GenericViewSet 通用视图集+混入类
+		```
+		file:views.py
+		
+		from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
+		
+		class StudentGenericViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin,DestroyModelMixin):
+			queryset = Student.objects.all()
+			serializer_class = StudentModelSerializers
+		```
+	- 上面继承的类太多，合并视图集
+	- ReadonlyModelViewset = mixins.RetrieveModelMixin + mixins.ListModelMixin + GenericViewset
+		```
+		class StudentReadOnlyModelViewSet(ReadOnlyModelViewSet, CreateModelMixin, UpdateModelMixin, DestroyModelMixin):
+			queryset = Student.objects.all()
+			serializer_class = StudentModelSerializers
+		```
+	- ModelViewSet = ReadOnlyModelViewSet + CreateModelMixin + UpdateModelMixin + DestroyModelMixin
+	- 实现了5个API接口
+		```
+		class StudentModelViewSet(ModelViewSet):
+			queryset = Student.objects.all()
+			serializer_class = StudentModelSerializers
+		```
 #### 路由Routers
-1. REST framework提供了两个router
+- 对于视图集ViewSet,我们除了可以自己手动指明请求方式与动作action之间的对应关系外，还可以使用Routers来帮助我们快速实现路由信息。如果是非视图集，不需要使用路由集routers
+- REST framework提供了两个router类,使用方式一致的。结果多一个或少一个根目录url地址的问题而已，用任何一个都可以。
 	- SimpleRouter
 	- DefaultRouter
 1. 使用方法
+```
+file:urls.py
+
+from rest_framework.routers import SimpleRouter, DefaultRouter
+
+# 实例化路由类
+router = DefaultRouter()  # 会含有根路由
+# router = SimpleRouter()
+# 路由注册视图集
+# register(prefix, viewset, base_name)
+	# prefix 该视图集的路由前缀	
+	# viewset 视图集
+	# base_name 路由别名的前缀
+router.register('studentR', views.StudentModelViewSet, basename='studentR')
+print(f'router.urls：{router.urls}')
+# 把生成的路由列表和urlpatterns进行拼接组合
+urlpatterns += router.urls
+```
+```
+HTTP 200 OK
+Allow: GET, HEAD, OPTIONS
+Content-Type: application/json
+Vary: Accept
+
+{
+	"studentR": "http://127.0.0.1:8000/viewdemo/studentR/"
+}
+```
 2. 视图集中附加action的声明
-3. 路由router形成URL的方式
+```
+action装饰器可以接收两个参数：
+	methods: 声明该action对应的请求方式，列表传递
+	detail: 声明该action的路径是否与单一资源对应
+路由前缀/<pk>/action方法名/
+	True 表示路径格式是xxx/<pk>/action方法名/
+	False 表示路径格式是xxx/action方法名/
+url_path：声明该action的路由尾缀。
+
+from rest_framework.decorators import action
+
+class StudentModelViewSet(ModelViewSet):
+    queryset = Student.objects.all()
+    serializer_class = StudentModelSerializers
+
+    @action(methods=['get', 'post'], detail=True, url_path='user/login')
+    # http://127.0.0.1:8000/viewdemo/studentR/2/user/login/
+    def login1(self, request, pk):
+        return Response({'msg': 'login success!'})
+
+    @action(methods=['get'], detail=False)
+    def login2(self, request):
+        return Response({'msg': 'login success!'})
+```
+#### 相关功能组件
+1. 认证
+	- 因为认证组件中需要使用到登录功能，所以我们使用django内置admin站点并创建一个管理员。admin运营站点的访问地址：http://127.0.0.1:8000/admin
+		```
+		python manage.py createsuperuser
+		Username (leave blank to use 'administrator'): admin
+		Email address: admin@123.com
+		Password:
+		Password (again):
+		This password is too short. It must contain at least 8 characters.
+		This password is too common.
+		This password is entirely numeric.
+		Bypass password validation and create user anyway? [y/N]: y
+		Superuser created successfully.
+		```
+		```
+		页面改中文与时区
+		settings.py文件
+		LANGUAGE_CODE = 'zh-hans'
+		TIME_ZONE = 'Asia/Shanghai'
+		```
+	- 可以在配置文件中配置全局默认的认证方案，常见的认证方式：cookie、session、token
+	- site-packages/rest_framework/settings.py 默认配置文件
+	```
+	DEFAULTS = {
+		'DEFAULT_AUTHENTICATION_CLASSES': [
+			'rest_framework.authentication.SessionAuthentication',
+			'rest_framework.authentication.BasicAuthentication'
+		],
+	}
+	```
+	- 也可以在具体的视图类中通过设置authentication_classess类属性来设置单独的不同的认证方式
+	```
+	from rest_framework.authentication import SessionAuthentication, BaseAuthentication
+	from rest_framework.views import APIView
+
+	class ExampleView(APIView):
+		authentication_classes = [SessionAuthentication, BaseAuthentication]
+
+		def get(self, request):
+			pass
+	```
+	- 认证失败会有两种可能的返回值，这个需要我们配合权限组件来使用：
+		- 401 Unauthorized 未认证
+		- 403 Permission Denied 权限被禁止
+	- 自定义配置
+		```
+		文件: 主应用下创建authentication.py
+		"""
+		from rest_framework.authentication import BaseAuthentication
+		from django.contrib.auth import get_user_model
+
+
+		class CustomAuthentication(BaseAuthentication):
+			"""
+			自定义认证方式
+			"""
+
+			def authenticate(self, request):
+				"""
+				认证方法
+				request: 本次客户端发送过来的http请求对象
+				"""
+				user = request.query_params.get("user")
+				pwd = request.query_params.get("pwd")
+				if user != "root" or pwd != "pwd":
+					return None
+				# get_user_model获取当前系统中用户表对应的用户模型类
+				user = get_user_model().objects.first()
+				return (user, None)  # 按照固定的返回格式填写 （用户模型对象, None）
+		```
+		```
+		file:views.py
+		
+		from drfdemo.authentication import CustomAuthentication
+
+		class CustomView(APIView):
+			# 局部配置
+			authentication_classes = [CustomAuthentication]
+
+			def get(self, request):
+				print(f'request.user:{request.user}')
+				return Response({'msg': 'ok'})
+		```
+		```
+		全局配置
+		主应用settings.py
+		
+		REST_FRAMEWORK = {
+			# 配置认证方式的选项【drf的认证是内部循环遍历每一个注册的认证类，一旦认证通过识别到用户身份，则不会继续循环】
+			'DEFAULT_AUTHENTICATION_CLASSES': (
+				'drfdemo.authentication.CustomAuthentication',          # 自定义认证
+				'rest_framework.authentication.SessionAuthentication',  # session认证
+				'rest_framework.authentication.BasicAuthentication',    # 基本认证
+			)
+		}
+		```
+		
+1. 权限
+	- 权限控制可以限制用户对于视图的访问和对于具有模型对象的访问。
+		- 在执行视图的as_view()方法的dispatch()方法前，会先进行视图访问权限的判断
+		- 在通过get_object()获取具体模型对象时，会进行模型对象访问权限的判断
+	- 可以在配置文件settings.py中全局设置默认的权限管理类
+	```
+	REST_FRAMEWORK = {
+		'DEFAULT_PERMISSION_CLASSES': (
+			'rest_framework.permissions.IsAuthenticated',
+		)
+	}
+	```
+	- 如果未指明，则采用如下默认配置rest_framework/settings.py
+	```
+	DEFAULTS = {
+		'DEFAULT_PERMISSION_CLASSES': (
+		   'rest_framework.permissions.AllowAny',
+		)
+	}
+	```
+	- 也可以在具体的视图中通过permission_classes属性来进行局部设
+	```
+	from rest_framework.permissions import IsAuthenticated
+	from rest_framework.views import APIView
+
+	class ExampleView(APIView):
+		permission_classes = (IsAuthenticated,)
+	```
+	- 提供的权限
+		- AllowAny 允许所有用户，默认权限
+		- IsAuthenticated 仅通过登录认证的用户
+		- IsAdminUser 仅管理员用户
+		- IsAuthenticatedOrReadOnly 已经登录认证的用户可以对数据进行增删改操作，没有登录认证的只能查看数据
+	```
+	from rest_framework.permissions import IsAuthenticated, IsAdminUser, IsAuthenticatedOrReadOnly
+
+	class HomeInfoAPIView(APIView):
+		# permission_classes = [IsAuthenticated]
+		# permission_classes = [IsAdminUser]
+		permission_classes = [IsAuthenticatedOrReadOnly]
+
+		def get(self, request):
+			return Response({'msg': 'ok'})
+
+		def post(self, request):
+			return Response({'msg': 'ok'})
+	```
+	- 自定义权限
+	- 如需自定义权限，需继承rest_framework.permissions.BasePermission父类，并实现以下两个任何一个方法或全部
+		- has_permission(self, request, view)
+		- 是否可以访问视图， view表示当前视图对象
+		- has_object_permission(self, request, view, obj)
+		- 是否可以访问模型对象， view表示当前视图， obj为模型数据对象
+		```
+		文件: 主应用下创建permissions.py
+		from rest_framework.permissions import BasePermission
+
+		class DemoPermission(BasePermission):
+			def has_permission(self, request, view):
+				"""
+				视图权限
+				返回结果为True则表示允许访问视图类
+				request: 本次客户端提交的请求对象
+				view: 本次客户端访问的视图类
+				"""
+				user = request.query_params.get("user")
+				return user == "admin"
+
+			def has_object_permission(self, request, view, obj):
+				"""
+				模型权限
+				返回结果为True则表示允许操作模型对象
+				通常写了has_permission视图权限，就不需要再写这个了
+				obj：本次权限判断的模型对象
+				"""
+				from school.models import Student
+				if (isinstance(obj, Student)):
+					user = request.query_params.get("user")
+					return user == 'admin'
+				return True
+		```
+		```
+		file：views.py
+		
+		class StudentInfoAPIView(RetrieveAPIView):
+		queryset = Student
+		serializer_class = StudentModelSerializers
+		permission_classes = [DemoPermission]
+		```
+		```
+		全局配置
+		REST_FRAMEWORK = {
+			# 权限全局配置
+			# 'DEFAULT_PERMISSION_CLASSES': [
+			#     # 设置所有视图只能被已经登录认证过的用户访问
+			#     'rest_framework.permissions.IsAuthenticated',
+			# ]
+		}
+		```
+
+1. 限流
+	- 可以对接口访问的频次进行限制，以减轻服务器压力，或者实现特定的业务。
+	```
+	主应用settings.py
+
+	REST_FRAMEWORK = {
+		# 限流全局配置
+		'DEFAULT_THROTTLE_CLASSES': [  # 限流配置类
+			'rest_framework.throttling.AnonRateThrottle',  # 未认证用户[未登录用户]
+			'rest_framework.throttling.UserRateThrottle',  # 已认证用户[已登录用户]
+		],
+		
+		# 局部配置
+		'DEFAULT_THROTTLE_RATES': {  # 频率配置
+			'anon': '2/day',  # 针对游客的访问频率进行限制，实际上，drf只是识别首字母，但是为了提高代码的维护性，建议写完整单词
+			'user': '5/day',  # 针对会员的访问频率进行限制，
+		}
+	}
+
+	DEFAULT_THROTTLE_RATES 可以使用 second, minute, hour 或day来指明周期。
+	```
+	- 可选限流
+		- AnonRateThrottle
+			- 限制所有匿名未认证用户，使用IP区分用户。【很多公司这样的，IP结合设备信息来判断，当然比IP要靠谱一点点而已】
+			- 使用DEFAULT_THROTTLE_RATES['anon'] 来设置频次
+		- UserRateThrottle
+			- 限制认证用户，使用User模型的 id主键 来区分。
+			- 使用DEFAULT_THROTTLE_RATES['user'] 来设置频次
+		- ScopedRateThrottle
+			- 限制用户对于每个视图的访问频次，使用ip或user id。
+		```
+		from rest_framework.throttling import UserRateThrottle
+
+		class StudentInfoAPIView(RetrieveAPIView):
+			queryset = Student
+			serializer_class = StudentModelSerializers
+			permission_classes = [DemoPermission]
+			throttle_classes = [UserRateThrottle]
+		```
+	- 自定义限流
+	```
+	主应用settings.py配置
+
+	REST_FRAMEWORK = {
+		# 限流全局配置
+		'DEFAULT_THROTTLE_CLASSES': (  # 限流配置类
+			'rest_framework.throttling.AnonRateThrottle',  # 未认证用户[未登录用户]
+			'rest_framework.throttling.UserRateThrottle',  # 已认证用户[已登录用户]
+			'rest_framework.throttling.ScopedRateThrottle',  # 基于自定义的命名空间限流
+
+		),
+		'DEFAULT_THROTTLE_RATES': {  # 频率配置
+			'vip': '3/day',  # 针对会员的访问频率进行限制，
+		}
+	}
+	```
+	```
+	views.py
+
+	class VipAPIView(APIView):
+		# 配置自定义限流
+		permission_classes = [IsAuthenticated]
+		throttle_scope = "vip"
+
+		def get(self, request):
+			return Response({'msg': 'ok'})
+	```
+1. 过滤Filtering
+	- 对于列表数据可能需要根据字段进行过滤，我们可以通过添加django-fitlter扩展来增强支持
+	```
+	pip install django-filter
+	```
+	- 主应用settings.py配置
+		```
+		INSTALLED_APPS = [
+			'django_filters',  # 需要注册应用，
+		]
+		
+		REST_FRAMEWORK = {
+			'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
+		}
+		```
+		```
+		views.py文件
+		
+		from rest_framework.generics import ListCreateAPIView
+		from school.models import Student
+		from school.serializers import StudentModelSerializers
+
+
+		class FilterAPIView(ListCreateAPIView):
+			queryset = Student.objects.all()
+			serializer_class = StudentModelSerializers
+			filter_fields = ['name', 'age'] # 表示根据name和age字段筛选
+		```
+1. 排序Ordering
+	- REST framework提供了OrderingFilter过滤器来帮助我们快速指明数据按照指定字段进行排序
+	- 在类视图中设置filter_backends，使用rest_framework.filters.OrderingFilter过滤器，REST framework会在请求的查询字符串参数中检查是否包含了ordering参数，如果包含了ordering参数，则按照ordering参数指明的排序字段对数据集进行排序。
+	- 前端可以传递的ordering参数的可选字段值需要在ordering_fields中指明。
+	- 全局配置
+		```
+		配置文件，settings.py
+		REST_FRAMEWORK ={
+			'DEFAULT_FILTER_BACKENDS':[
+				'rest_framework.filters.OrderingFilter',
+			]
+		}
+		```
+		```
+		from rest_framework.generics import ListCreateAPIView
+		from school.models import Student
+		from school.serializers import StudentModelSerializers
+
+		class FilterAPIView(ListCreateAPIView):
+			queryset = Student.objects.all()
+			serializer_class = StudentModelSerializers
+			order_fields = ['id', 'age']
+		```
+		```
+		访问：http://127.0.0.1:8000/opt/filter/?ordering=-age
+		```
+	- 单独配置
+		- 上面提到，因为过滤和排序公用了一个配置项，所以排序和过滤要一起使用，则必须整个项目，要么一起全局过滤排序，要么一起局部过滤排序。决不能出现，一个全局，一个局部的这种情况，局部会覆盖全局的配置。
+		```
+		from rest_framework.generics import ListCreateAPIView
+		from rest_framework.filters import OrderingFilter
+		from django_filters.rest_framework import DjangoFilterBackend
+		from school.models import Student
+		from school.serializers import StudentModelSerializers
+
+		class FilterAPIView(ListCreateAPIView):
+			queryset = Student.objects.all()
+			serializer_class = StudentModelSerializers
+			# 局部排序
+			filter_backends = [OrderingFilter, DjangoFilterBackend]
+			order_fields = ['id', 'age']
+
+			# 局部过滤
+			filter_fields = ['id', 'age']
+		```
+1. 分页Pagination
+	- django默认提供的分页器主要使用于前后端不分离的业务场景，所以REST framework也提供了分页的支持
+	- 全局配置
+	```
+	主应用settings.py
+	
+	REST_FRAMEWORK = {
+		'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # 页码分页
+		# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination', # 偏移量分页
+	    'PAGE_SIZE': 10  # 每页数目
+	}
+	```
+	```
+	from rest_framework.generics import ListAPIView
+	from school.models import Student
+	from school.serializers import StudentModelSerializers
+
+	class PageAPIView(ListAPIView):
+		queryset = Student.objects.all()
+		serializer_class = StudentModelSerializers
+	```
+	```
+	from rest_framework.generics import ListAPIView
+	from school.models import Student
+	from school.serializers import StudentModelSerializers
+
+ 	class PageAPIView(ListAPIView):
+		queryset = Student.objects.all()
+		serializer_class = StudentModelSerializers
+		pagination_class = None  # 关闭全局分页效果
+	```
+	- 局部分页
+	```
+	主应用settings.py
+	
+	REST_FRAMEWORK = {
+		# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # 页码分页
+		# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination', # 偏移量分页
+	    'PAGE_SIZE': 10  # 每页数目
+	}
+	```
+	```
+	from rest_framework.generics import ListAPIView
+	from school.models import Student
+	from school.serializers import StudentModelSerializers
+	from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
+
+	class PageAPIView(ListAPIView):
+		queryset = Student.objects.all()
+		serializer_class = StudentModelSerializers
+		# 局部分页
+		pagination_class = PageNumberPagination
+	```
+	- 自定义分页器
+	```
+	from rest_framework.generics import ListAPIView
+	from school.models import Student
+	from school.serializers import StudentModelSerializers
+	from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
+
+	# 自定义分页器
+	class **PagePagination**(PageNumberPagination):
+		page_query_param = 'page'  # 代表页码的变量名
+		page_size_query_param = 'size'  # 每一页数据的变量名
+		page_size = 4  # 每一页的数据量
+		max_page_size = 5  # 允许调整的每一页最大数量
+
+	class PageAPIView(ListAPIView):
+		queryset = Student.objects.all()
+		serializer_class = StudentModelSerializers
+		pagination_class = **PagePagination**
+	```
+1. 异常处理 Exceptions
+	- REST framework本身在APIView提供了异常处理，但是仅针对drf内部现有的接口开发相关的异常进行格式处理，但是开发中我们还会使用到各种的数据或者进行各种网络请求，这些都有可能导致出现异常，这些异常在中是没有进行处理的，所以就会抛给django框架了，django框架会进行组织错误信息，作为htm页面返回给客户端，所在在前后端分离项目中，可能JS无法理解或者无法接收到这种数据，甚至导致JS出现措误的情况。因此为了避免出现这种情况，我们可以自定义一个属于自己的异常处理函数，对于无法处理的异常，我们自己编写异常处理的代码逻辑。
+	- 针对于现有的的异常处理进行额外添加属于开发者自己的逻辑代码，一般我们编写的异常处理函数，会写一个公共的目录下或者主应用目录下。这里主应用下直接创建一个excepitions.py
+	```
+	文件: exceptions.py
+	from rest_framework.response import Response
+	from rest_framework.views import exception_handler as drf_exception_handler
+	from django.db import DatabaseError
+
+	def exception_handler(exc, context):
+		"""
+		exc：本次发生异常的对象，对象
+		context：本次发生一次时的上下文环境信息，字典。所谓的执行上下文[context]，就是程序执行到当前一行代码时，能提供给开发者调用的环境信息异常发生时，代码所在的路径，时间，视图，客户端http请求等等...]
+		"""
+		response = drf_exception_handler(exc, context)
+		if response is None:
+			if isinstance(exc, ZeroDivisionError):
+				response = Response({'detail': '除数不能为0！'})
+			if isinstance(exc, DatabaseError):
+				response = Response({'detail': '数据库处理异常！'})
+		return response
+	```
+	```
+	主应用settings.py
+	
+	REST_FRAMEWORK = {
+		'EXCEPTION_HANDLER': 'drfdemo.exceptions.exception_handler'
+	}
+	```
+	```
+	views.py
+	
+	class PageAPIView(APIView):
+    def get(self, request):
+        1 / 0
+        return Response({'msg': 'ok'})
+	```
+	- REST framework定义的异常
+		- APIException 所有异常的父类
+		- ParseError 解析错误
+		- AuthenticationFailed 认证失败
+		- NotAuthenticated 尚未认证
+		- PermissionDenied 权限决绝
+		- NotFound 未找到
+		- MethodNotAllowed 请求方式不支持
+		- NotAcceptable 要获取的数据格式不支持
+		- Throttled 超过限流次数
+		- ValidationError 校验失败
+	- 很多的没有在上面列出来的异常，就需要我们在自定义异常中自己处理
+1. 自动生成接口文档
+	```
+	pip install coreapi
+	```	
+	```
+	总路由urls.py
+	
+	from rest_framework.documentation import include_docs_urls
+	urlpatterns = [
+		path('docs/', include_docs_urls(title='接口文档API'))
+	]
+	```
+	```
+	settings.py
+	
+	INSTALLED_APPS = [
+		'coreapi',
+	]
+		
+	REST_FRAMEWORK = {
+	    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.AutoSchema',
+	}
+	```
+	- 页面访问：http://127.0.0.1:8000/docs/
+	- 接口描述信息
+		- 单一方法的视图，可直接使用类视图的文档字符串
+		```
+		class BookListView(generics.ListAPIView):
+			"""
+			返回所有图书信息.
+			"""
+		```
+		- 包含多个方法的视图，在类视图的文档字符串中，分开方法定义
+		```
+		class BookListCreateView(generics.ListCreateAPIView):
+		    """
+		    get:
+		    返回所有图书信息.
+		
+		    post:
+		    新建图书.
+		    """
+		```
+		- 对于视图集ViewSet，仍在类视图的文档字符串中封开定义，但是应使用action名称区分
+		```
+		class BookInfoViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewSet):
+		    """
+		    list:
+		    返回图书列表数据
+		
+		    retrieve:
+		    返回图书详情数据
+		
+		    latest:
+		    返回最新的图书数据
+		
+		    read:
+		    修改图书的阅读量
+		    """
+		```
+		- 两点说明：
+			- 视图集ViewSet中的retrieve名称，在接口文档网站中叫做read
+			- 参数的Description需要在模型类或序列化器类的字段中以help_text选项定义
+			```
+			class Student(models.Model):
+			    ...
+			    age = models.IntegerField(default=0, verbose_name='年龄', help_text='年龄')
+			    ...
+			```
+			```
+			class StudentSerializer(serializers.ModelSerializer):
+			    class Meta:
+			        model = Student
+			        fields = "__all__"
+			        extra_kwargs = {
+			            'age': {
+			                'required': True,
+			                'help_text': '年龄'
+			            }
+			        }
+			```
+	- 通过swagger展示
+	```
+	pip install drf-yasg
+	```
+	```
+	settings.py文件
+	
+	INSTALLED_APPS = [
+		'drf_yasg',
+	]
+	```
