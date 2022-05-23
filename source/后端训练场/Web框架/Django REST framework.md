@@ -2317,13 +2317,37 @@ class StudentModelViewSet(ModelViewSet):
 			        }
 			```
 	- 通过swagger展示
-	```
-	pip install drf-yasg
-	```
-	```
-	settings.py文件
-	
-	INSTALLED_APPS = [
-		'drf_yasg',
-	]
-	```
+		```
+		pip install drf-yasg
+		```
+		```
+		settings.py文件
+		
+		INSTALLED_APPS = [
+			'drf_yasg',
+		]
+		```
+		```
+		urls.py
+		
+		from drf_yasg.views import get_schema_view
+		from drf_yasg import openapi
+		from rest_framework.permissions import IsAuthenticated
+
+		schema_view = get_schema_view(
+			openapi.Info(
+				title="Swagger接口文档",
+				default_version='v1.0',  # 必传
+				description="描述信息",
+				terms_of_service='',
+				contact=openapi.Contact(email="liuly2@knownsec.com"),
+				license=openapi.License(name="协议版木")
+			),
+			public=True,  # 允许所有人都能访问
+			permission_classes=(IsAuthenticated,)
+		)
+
+		urlpatterns = [
+			path('sw/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger')
+		]
+		```
