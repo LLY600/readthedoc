@@ -180,3 +180,198 @@ elif async_result.status == 'RETRY':
 elif async_result.status == 'STARTED':
     print('任务已经开始被执行')
 ```
+# Celery执行定时任务
+## 普通模式
+```
+file: celery_task.py
+
+import time
+from celery_tasks.celery import cel
+
+@cel.task
+def send_email(name):
+    time.sleep(5)
+    return f"完成向{name}发送邮件任务"
+```
+```
+文件: produce_task.py
+
+from celery_tasks.task01 import send_email
+from celery_tasks.task02 import send_msg
+from datetime import datetime, timedelta
+
+# 方式一
+# v1 = datetime(2022, 5, 25, 21, 18, 0)
+# print(v1)
+# v2 = datetime.utcfromtimestamp(v1.timestamp())
+# print(v2)
+# result = send_email.apply_async(args=['lin'], eta=v2)
+
+# 方式二
+ctime = datetime.now()
+# 默认使用utc时间
+utc_time = datetime.utcfromtimestamp(ctime.timestamp())
+time_delay = timedelta(seconds=5)
+task_time = utc_time + time_delay
+print(task_time)
+result = send_email.apply_async(args=['lin'], eta=task_time)
+print(result.id)
+```
+```
+celery -A tmp_task worker -l INFO
+```
+运行produce_task.py
+
+## 多任务结构
+```
+文件: celery.py
+
+from celery import Celery
+from celery.schedules import crontab
+from datetime import timedelta
+
+cel = Celery('celery_demo',
+             broker='redis://127.0.0.1:6379/1',
+             backend='redis://127.0.0.1:6379/2',
+             # 包含以下两个任务文件，去相应的py文件中找任务，对多个任务做分类
+             include=['celery_tasks.task01',
+                      'celery_tasks.task02'
+                      ])
+
+# 时区
+cel.conf.timezone = 'Asia/Shanghai'
+# 是否使用UTC
+cel.conf.enable_utc = False
+
+cel.conf.beat_schedule = {
+    'add-every-5-seconds': {
+        'task': 'celery_tasks.task01.send_email',
+        # 'schedule': 1.0,
+        # 'schedule': crontab(minute="*/1"),
+        'schedule': timedelta(seconds=5),
+        'args': ('张三',)
+    },
+    'add-every-8-seconds': {
+        'task': 'celery_tasks.task02.send_msg',
+        'schedule': timedelta(seconds=8),
+        'args': ('李四',)
+    },
+}
+```
+```
+celery -A celery_tasks worker -l INFO
+```
+```
+celery  -A celery_tasks beat
+```
+# celery在django中使用
+结构如下：
+```
+├─drfdemo
+│  │  asgi.py
+│  │  authentication.py
+│  │  exceptions.py
+│  │  permissions.py
+│  │  settings.py
+│  │  urls.py
+│  │  wsgi.py
+│  │  __init__.py
+│
+├─mycelery
+│  │  config.py
+│  │  main.py
+│  │  settings.py
+│  │  __init__.py
+│  │
+│  ├─email
+│  │  │  tasks.py
+│  │  │  __init__.py
+│  ├─sms
+│  │  │  tasks.py
+│  │  │  __init__.py
+│
+├─opt
+│  │  admin.py
+│  │  apps.py
+│  │  models.py
+│  │  tests.py
+│  │  urls.py
+│  │  views.py
+│  │  __init__.py
+│  │
+│  ├─migrations
+│  │  │  __init__.py
+```
+```
+文件: email/tasks.py
+# celery的任务必须写在tasks.py的文件中，别的文件名称不识别!!!
+from mycelery.main import app
+import time
+import logging
+log = logging.getLogger("django")
+
+@app.task  # name表示设置任务的名称，如果不填写，则默认使用函数名做为任务名
+def send_sms(mobile):
+    """发送短信"""
+    print("向手机号%s发送短信成功!" % mobile)
+    time.sleep(5)
+    return "send_sms OK"
+
+@app.task  # name表示设置任务的名称，如果不填写，则默认使用函数名做为任务名
+def send_sms2(mobile):
+    print("向手机号%s发送短信成功!" % mobile)
+    time.sleep(5)
+    return "send_sms2 OK"
+```
+```
+文件: config.py
+broker_url = 'redis://127.0.0.1:6379/15'
+result_backend = 'redis://127.0.0.1:6379/14'
+```
+```
+文件: main.py
+
+# 主程序
+import os
+from celery import Celery
+
+# 创建celery实例对象
+app = Celery("celery_demo")
+
+# 把celery和django进行组合，识别和加载django的配置文件
+os.environ.setdefault('DJANGO_SETTINGS_MODULE','mycelery.settings')
+
+# 通过app对象加载配置
+app.config_from_object("mycelery.config")
+
+# 加载任务
+# 参数必须必须是一个列表，里面的每一个任务都是任务的路径名称
+# app.autodiscover_tasks(["任务1","任务2"])
+app.autodiscover_tasks(["mycelery.sms", 'mycelery.email'])
+
+# 启动Celery的命令
+# 强烈建议切换目录到mycelery根目录下启动
+# celery -A mycelery.main worker --loglevel=info
+```
+```
+文件：views.py
+
+from mycelery.email.tasks import send_sms, send_sms2
+from datetime import timedelta, datetime
+
+def celery_demo(request):
+    send_sms.delay("110")
+    send_sms2.delay("119")
+    return HttpResponse('ok')
+
+	ctime = datetime.now()
+    # 默认用utc时间
+    utc_ctime = datetime.utcfromtimestamp(ctime.timestamp())
+    time_delay = timedelta(seconds=10)
+    task_time = utc_ctime + time_delay
+    result = send_sms.apply_async(["911", ], eta=task_time)
+    print(result.id)
+```
+```
+celery -A mycelery.main worker -l INFO
+```
