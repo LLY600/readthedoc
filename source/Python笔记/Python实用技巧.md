@@ -437,8 +437,45 @@ print(sorted_d)
 from operator import itemgetter
 sorted_d = dict(sorted(d.items(), key=itemgetter(1)))
 ```
+#### demjson处理非标准json数据
+```
+# javascript中的对象，json.loads(js_json)会报错
+js_json = "{x:1, y:2, z:3}"
+ 
+# python打印出来的字典，json.loads(js_json)会报错
+py_json = "{'x':1, 'y':2, 'z':3}"
+ 
+# 唯独这种格式，json.loads(py_json)不会报错，得到{'x': 1, 'y': 2, 'z': 3}
+py_json = '{"x":1, "y":2, "z":3}'
+```
+```
+import demjson
+ 
+js_json = "{x:1, y:2, z:3}"
+py_json = "{'x':1, 'y':2, 'z':3}"
+py_json = '{"x":1, "y":2, "z":3}'
+ 
+data = demjson.decode(js_json)
+print(data)
+# {'y': 2, 'x': 1, 'z': 3}
+ 
+data = demjson.decode(py_json1)
+print(data)
+# {'y': 2, 'x': 1, 'z': 3}
+ 
+data = demjson.decode(py_json2)
+print(data)
+# {'y': 2, 'x': 1, 'z': 3}
+```
+```
+demjson.encode( ['one',42,True,None] )    # From Python to JSON
+'["one",42,true,null]'
+
+demjson.decode( '["one",42,true,null]' )  # From JSON to Python
+['one', 42, True, None]
+```
 #### 写在最后
-- Python 是一种非常多样化且发展良好的语言，因此肯定会有许多我没有考虑的功能。如果你想了解更多的python模块，可以参考awesome-python[25]。
+- Python 是一种非常多样化且发展良好的语言，如果你想了解更多的python模块，可以参考awesome-python[25]。
 
 #### 参考资料
 - [1] collections 模块: https://docs.python.org/3/library/collections.html
