@@ -1089,43 +1089,42 @@ lsvirtualenv : 列举所有的环境。
 1. 定义模型类
 	- 模型类被定义在"应用/models.py"文件中。
 	- 模型类必须继承自Model类，位于包django.db.models中。
-	- 定义
-		```
-		创建应用booktest，在models.py 文件中定义模型类
-		
-		from django.db import models
-		#定义图书模型类BookInfo
-		class BookInfo(models.Model):
-			btitle = models.CharField(max_length=20, verbose_name='名称')
-			bpub_date = models.DateField(verbose_name='发布日期')
-			bread = models.IntegerField(default=0, verbose_name='阅读量')
-			bcomment = models.IntegerField(default=0, verbose_name='评论量')
-			is_delete = models.BooleanField(default=False, verbose_name='逻辑删除')
-			class Meta:
-				db_table = 'tb_books'  # 指明数据库表名
-				verbose_name = '图书'  # 在admin站点中显示的名称
-				verbose_name_plural = verbose_name  # 显示的复数名称
-			def __str__(self):
-				"""定义每个数据对象的显示信息"""
-				return self.btitle
-		#定义英雄模型类HeroInfo
-		class HeroInfo(models.Model):
-			GENDER_CHOICES = (
-				(0, 'female'),
-				(1, 'male')
-			)
-			hname = models.CharField(max_length=20, verbose_name='名称') 
-			hgender = models.SmallIntegerField(choices=GENDER_CHOICES, default=0, verbose_name='性别')  
-			hcomment = models.CharField(max_length=200, null=True, verbose_name='描述信息') 
-			hbook = models.ForeignKey(BookInfo, on_delete=models.CASCADE, verbose_name='图书')  # 外键
-			is_delete = models.BooleanField(default=False, verbose_name='逻辑删除')
-			class Meta:
-				db_table = 'tb_heros'
-				verbose_name = '英雄'
-				verbose_name_plural = verbose_name
-			def __str__(self):
-				return self.hname
-		```
+	```
+	创建应用booktest，在models.py 文件中定义模型类
+	
+	from django.db import models
+	#定义图书模型类BookInfo
+	class BookInfo(models.Model):
+		btitle = models.CharField(max_length=20, verbose_name='名称')
+		bpub_date = models.DateField(verbose_name='发布日期')
+		bread = models.IntegerField(default=0, verbose_name='阅读量')
+		bcomment = models.IntegerField(default=0, verbose_name='评论量')
+		is_delete = models.BooleanField(default=False, verbose_name='逻辑删除')
+		class Meta:
+			db_table = 'tb_books'  # 指明数据库表名
+			verbose_name = '图书'  # 在admin站点中显示的名称
+			verbose_name_plural = verbose_name  # 显示的复数名称
+		def __str__(self):
+			"""定义每个数据对象的显示信息"""
+			return self.btitle
+	#定义英雄模型类HeroInfo
+	class HeroInfo(models.Model):
+		GENDER_CHOICES = (
+			(0, 'female'),
+			(1, 'male')
+		)
+		hname = models.CharField(max_length=20, verbose_name='名称') 
+		hgender = models.SmallIntegerField(choices=GENDER_CHOICES, default=0, verbose_name='性别')  
+		hcomment = models.CharField(max_length=200, null=True, verbose_name='描述信息') 
+		hbook = models.ForeignKey(BookInfo, on_delete=models.CASCADE, verbose_name='图书')
+		is_delete = models.BooleanField(default=False, verbose_name='逻辑删除')
+		class Meta:
+			db_table = 'tb_heros'
+			verbose_name = '英雄'
+			verbose_name_plural = verbose_name
+		def __str__(self):
+			return self.hname
+	```
 	- 数据库表名
 		- 模型类如果未指明表名，Django默认以 小写app应用名_小写模型类名 为数据库表名。
 		- 可通过db_table 指明数据库表名。
@@ -1140,32 +1139,34 @@ lsvirtualenv : 列举所有的环境。
 		属性=models.字段类型(选项)
 		```
 	- 字段类型
-	```
-	|AutoField	|自动增长的IntegerField，通常不用指定，不指定时Django会自动创建属性名为id的自动增长属性|
-	|BooleanField	|布尔字段，值为True或False|
-	|NullBooleanField	|支持Null、True、False三种值|
-	|CharField	|字符串，参数max_length表示最大字符个数|
-	|TextField	|大文本字段，一般超过4000个字符时使用|
-	|IntegerField	|整数|
-	|DecimalField	|十进制浮点数， 参数max_digits表示总位数， 参数decimal_places表示小数位数|
-	|FloatField	|浮点数|
-	|DateField	|日期， 参数auto_now表示每次保存对象时，自动设置该字段为当前时间，用于"最后一次修改"的时间戳，它总是使用当前日期，默认为False； 参数auto_now_add表示当对象第一次被创建时自动设置当前时间，用于创建的时间戳，它总是使用当前日期，默认为False; 参数auto_now_add和auto_now是相互排斥的，组合将会发生错误|
-	|TimeField	|时间，参数同DateField|
-	|DateTimeField	|日期时间，参数同DateField|
-	|FileField	|上传文件字段|
-	|ImageField	|继承于FileField，对上传的内容进行校验，确保是有效的图片|
-	```
+		- AutoField：自动增长的IntegerField，通常不用指定，不指定时Django会自动创建属性名为id的自动增长属性
+		- BooleanField：布尔字段，值为True或False
+		- NullBooleanField：支持Null、True、False三种值
+		- CharField：字符串，参数max_length表示最大字符个数
+		- TextField：大文本字段，一般超过4000个字符时使用
+		- IntegerField：整数，主键，它同AutoField一样，唯一的差别就是不自增
+		- SmallIntegerField：小整数时一般会用到
+		- DecimalField：十进制浮点数， 参数max_digits表示总位数， 参数decimal_places表示小数位数
+		- FloatField：浮点数
+		- DateField：日期， 参数auto_now表示每次保存对象时，自动设置该字段为当前时间，用于"最后一次修改"的时间戳，它总是使用当前日期，默认为False； 参数auto_now_add表示当对象第一次被创建时自动设置当前时间，用于创建的时间戳，它总是使用当前日期，默认为False; 参数auto_now_add和auto_now是相互排斥的，组合将会发生错误
+		- TimeField：时间，参数同DateField
+		- DateTimeField：日期时间，参数同DateField
+		- FileField：上传文件字段
+		- ImageField：继承于FileField，对上传的内容进行校验，确保是有效的图片
+		- ForeignKey：关系属性用法，建立一对多关系，**ForeignKey('self', null=True, blank=True) 可以指向自己（不李姐，待研究）**
 	- 选项
-	```
-	|null		|如果为True，表示允许为空，默认值是False											|
-	|blank		|如果为True，则该字段允许为空白，默认值是False										|
-	|db_column	|字段的名称，如果未指定，则使用属性的名称											|
-	|db_index	|若值为True, 则在表中会为此字段创建索引，默认值是False								|
-	|default	|默认																				|
-	|primary_key|若为True，则该字段会成为模型的主键字段，默认值是False，一般作为AutoField的选项使用	|
-	|unique		|如果为True, 这个字段在表中必须有唯一值，默认值是False								|
-	null是数据库范畴的概念，blank是表单验证范畴的
-	```
+		- null：如果为True，表示允许为空，默认值是False											
+		- blank：如果为True，则该字段允许为空白，默认值是False										
+		- db_column：字段的名称，如果未指定，则使用属性的名称											
+		- db_index：若值为True, 则在表中会为此字段创建索引，默认值是False								
+		- default：默认																				
+		- primary_key：若为True，则该字段会成为模型的主键字段，默认值是False，一般作为AutoField的选项使用	
+		- unique：如果为True, 这个字段在表中必须有唯一值，默认值是False
+		- verbose_name：用于指定名称
+		- choices：配置字段的choices后，在admin页面上就可以看到对应的选项展示，choice显示中文可以使用 "get_字段名_display()"
+							
+		- **null是数据库范畴的概念，blank是表单验证范畴的**
+		- **当修改模型类之后，如果影响表结构，则必须重新做迁移，选项中default和blank不影响表结构**
 	- 外键
 		- 在设置外键时，需要通过on_delete选项指明主表删除数据时，对于外键引用表数据如何处理，在django.db.models中包含了可选常量：
 		- CASCADE 级联，删除主表数据时连通一起删除外键表中数据
@@ -1271,42 +1272,63 @@ lsvirtualenv : 列举所有的环境。
 			```
 		- create
 			```
-			模型类.objects.create()
-			
 			HeroInfo.objects.create(
 			    hname='沙悟净',
 			    hgender=0,
 			    hbook=book
 			)
 			```
+		- 批量增加
+			```
+			object_list = [
+				models.UserInfo(name='Alex',age=18),
+				models.UserInfo(name='sss',age=20),
+				...
+				
+			]
+			models.UserInfo.objects.bulk_create(object_list,10) # 每次10个批量添加
+			```
 	- 删除(2种方式)
 		- 模型类对象delete
-		```
-		hero = HeroInfo.objects.get(id=13)
-		hero.delete()
-		```
+			```
+			hero = HeroInfo.objects.get(id=13)
+			hero.delete()
+			```
 		- 模型类.objects.filter().delete()
-		```
-		HeroInfo.objects.filter(id=14).delete()
-		```
+			```
+			HeroInfo.objects.filter(id=14).delete()
+			```
 	- 修改(2种方式)
 		- save
-		```
-		修改模型类对象的属性，然后执行save()方法
-		
-		hero = HeroInfo.objects.get(hname='猪八戒')
-		hero.hname = '猪悟能'
-		hero.save()
-		```
+			```
+			修改模型类对象的属性，然后执行save()方法
+			
+			hero = HeroInfo.objects.get(hname='猪八戒')
+			hero.hname = '猪悟能'
+			hero.save()
+			```
 		- update
+			```
+			使用模型类.objects.filter().update()，会返回受影响的行数
+			
+			HeroInfo.objects.filter(hname='沙悟净').update(hname='沙僧')
+			```
+	- update_or_create()方法
+		- 如果数据库内没有该数据则新增，如果有则更新。
+		- 该方法的参数必须为一些用于查询的指定字段（这里是username），以及需要新增或者更新的defaults字典。
+		- 而其返回值，则是一个查询对象和是否新建对象布尔值的二元元组。
 		```
-		使用模型类.objects.filter().update()，会返回受影响的行数
-		
-		HeroInfo.objects.filter(hname='沙悟净').update(hname='沙僧')
+		def add_to_new_assets_zone(self):
+		    defaults = {
+		        'data': json.dumps(self.data),
+		        'username': self.data.get('username'),
+		        'password': self.data.get('password'),
+		    }
+		models.UserProfile.objects.update_or_create(username='xiaohong', defaults=defaults)
 		```
 	- 查询
 		- 基本查询
-			- get 查询单一结果，如果不存在会抛出模型类.DoesNotExist异常。
+			- get 查询单一结果，如果查到多条数据，则抛异常MultipleObjectsReturned；如果不存在会抛出模型类.DoesNotExist异常。
 			- all 查询多个结果。
 			- count 查询结果数量。
 			```
@@ -1320,7 +1342,7 @@ lsvirtualenv : 列举所有的环境。
 			BookInfo.objects.count()
 			```
 		- 过滤查询
-			- filter 过滤出多个结果
+			- filter 过滤满足条件的所有数据，查不到返回None
 			- exclude 排除掉符合条件剩下的结果
 			- get 过滤单一结果
 			- 对于过滤条件的使用，上述三个方法相同，故仅以filter进行讲解
@@ -1388,7 +1410,7 @@ lsvirtualenv : 列举所有的环境。
 			BookInfo.objects.filter(bpub_date__gt=date(19	90, 1, 1))
 			```
 		- F对象
-			- 之前的查询都是对象的属性与常量值比较，两个属性怎么比较呢？ 答：使用F对象，被定义在django.db.models中。
+			- 之前的查询都是对象的属性与常量值比较，**两个属性怎么比较**呢？ 答：使用F对象，被定义在django.db.models中。
 			```
 			语法如下：
 			F(属性名)
@@ -1453,18 +1475,59 @@ lsvirtualenv : 列举所有的环境。
 			BookInfo.objects.all().order_by('bread')  # 升序
 			BookInfo.objects.all().order_by('-bread')  # 降序
 			```
+		- **模型类关系（李姐不深刻）**
+			- 一对多关系(ForeignKey) ，将字段定义在多的一端
+			- 多对多关系(ManyToManyField)，将字段定义在任意一端
+			- 一对一关系(OneToOneField)，将字段定义在任意一端
+			- 自关联
+				- 自关联是一种特殊的一对多（把关联属性指向了自己），案例：显示多级地区
+				```
+				models.py
+				
+				class AreaInfo(models.Model):
+				    '''地区模型类'''
+				    # 地区名称
+				    atitle = models.CharField(max_length=20)
+				    # 关系属性，代表当前地区的父级地区,主键指向自己，允许为空
+				    aParent = models.ForeignKey('self', null=True, blank=True)
+				```
+				```
+				views.py
+				
+				from booktest.models import AreaInfo
+				def areas(request):
+				    '''获取广州市的上级地区和下级地图'''
+				    # 1.获取广州市信息
+				    area = AreaInfo.objects.get(atitle='广州市')
+				    # 2.查询广州市的上级地区
+				    parent = area.aParent
+				    # 3.查询广州市的下级地区
+				    children = area.areainfo_set.all()
+				```
 		- 关联查询
-			- 由一到多的访问语法
+			- **由一到多的访问语法**
 			```
-			一对多的模型类对象.多对应的模型类名小写_set 例：
+			方法一：
+			一类的对象.多类名小写_set.all()
 			b = BookInfo.objects.get(id=1)
 			b.heroinfo_set.all()
 			```
-			- 由多到一的访问语法
 			```
-			多对一的模型类对象.多对应的模型类中的关系类属性名 例：
+			方法二：
+			多类名.objects.filter(关联属性__一类属性名__条件名)
+			models.Article.objects.filter(user__username='admin')
+			```
+			- **由多到一的访问语法**
+			```
+			方法一：
+			多类的对象.主键
 			h = HeroInfo.objects.get(id=1)
 			h.hbook
+			```
+			```
+			方法二：
+			一类名.objects.filter(多类名小写__多类属性名)
+			models.UserProfile.objects.filter(article__title='啦啦啦我是3')
 			```
 			- 访问一对应的模型类关联对象的id语法
 			```
@@ -1472,6 +1535,8 @@ lsvirtualenv : 列举所有的环境。
 			h = HeroInfo.objects.get(id=1)
 			h.hbook_id
 			```
+			- 通过模型类实现关联查询时，要查哪个表中的数据，就需要通过哪个类来查；
+			- 写关联查询条件的时候，如果类中没有关系属性，条件需要些对应类的名，如果类中有关系属性，直接写关系属性。
 		- 关联过滤查询
 			- 由多模型类条件查询一模型类数据:
 			```
