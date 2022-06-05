@@ -1,10 +1,192 @@
-Django REST framework
-==========================
-#### Web应用模式
+# 为什么选择DRF
+1. 提供了可视化的API调试界面，在线测试接口
+2. 根据需求来选择常规视图功能或更高级的功能
+3. 不用自己写大量的CRUD接口，简单配置即可
+4. 支持ORM（对象映射关系）和**非ORM的数据序列化**
+# Django和Drf请求的生命周期
+## Django请求生命周期
+![](uTools_1654323628804.png)
+- 注解：每一个中间件对应一个类，类中可以定义方法：请求和响应时都要挨个的穿过这些类
+1. 前端发送请求
+2. wsgi, 就是socket服务端，用于接收用户请求并将请求进行初次封装，然后将请求交给web框架（Flask、Django）
+3. 中间件处理请求，帮助我们对请求进行校验或在请求对象中添加其他相关数据，例如：csrf、request.session
+4. 路由匹配，根据当前请求的URL找到视图函数，如果是FBV写法，通过判断method两类型，找到对应的视图函数；如果是CBV写法，匹配成功后会自动去找dispatch方法，然后Django会通过dispatch反射的方式找到类中对应的方法并执行
+5. 视图函数，在视图函数中进行业务逻辑的处理，可能涉及到：orm、view视图将数据渲染到template模板
+6. 视图函数执行完毕之后，会把客户端想要的数据返回给dispatch方法，由dispatch方法把数据返回经客户端
+7. 中间件处理响应
+8. wsgi，将响应的内容发送给浏览器
+9. 浏览器渲染
+
+## Drf请求生命周期
+1. 前端发送请求
+2. Django的wsgi
+3. 中间件
+4. 路由系统_执行CBV的as_view()，就是执行内部的dispath方法
+5. 在执行dispath之前，有版本分析和渲染器
+6. 在dispath内，对request封装
+7. 版本
+8. 认证
+9. 权限
+10. 限流
+11. 通过反射执行视图函数
+12. 如果视图用到缓存( request.data or request.query_params )就用到了解析器
+13. 视图处理数据，用到了序列化(对数据进行序列化或验证)
+14. 视图返回数据可以用到分页
+```
+# 定义案例视图分析过程
+ 
+from rest framework.views import APIView
+from rest framework.response import Response
+class TestView(APIView):
+	def get(self,request,*args,**kwargs):
+		return Response("drf get ok")
+	def post(self,request,*args,**kwargs):
+		return Response("drf post ok") # 这里的Response必须是drf下的Response，不能是Django原生的HttpResponse或者是JsonResponse，否则会出错
+
+urlpatterns = [
+	path('test/',views.Testview.as_view(),name="Test"),
+]
+```
+- 首先我们先从路由配置中看到views.TestView.as_view()，调用的是TestView类视图下的as_view方法，但是我们上面定义该方法的时候，没有重写as_view()方法，所以会调用父类APIView中的as_view方法
+```
+路径：rest_framework.views.APIView.as_view
+
+@classmethod
+def as_view(cls, **initkwargs):
+	"""
+	Store the original class on the view function.
+
+	This allows us to discover information about the view when we do URL
+	reverse lookups.  Used for breadcrumb generation.
+	"""
+	if isinstance(getattr(cls, 'queryset', None), models.query.QuerySet):
+		def force_evaluation():
+			raise RuntimeError(
+				'Do not evaluate the `.queryset` attribute directly, '
+				'as the result will be cached and reused between requests. '
+				'Use `.all()` or call `.get_queryset()` instead.'
+			)
+		cls.queryset._fetch_all = force_evaluation
+
+	**view = super().as_view(**initkwargs)**
+	view.cls = cls
+	view.initkwargs = initkwargs
+
+	# Note: session based authentication is explicitly CSRF validated,
+	# all other authentication is CSRF exempt.
+	**return csrf_exempt(view)**
+```
+- 通过这行代码view = super().as_view(**initkwargs)，可以知道APIView的as_view方法也调用了父类（Django原生）View的as_view方法，还禁用了csrf认证，源码如下
+```
+路径：django.views.generic.base.View.as_view
+
+@classonlymethod
+def as_view(cls, **initkwargs):
+	"""Main entry point for a request-response process."""
+	for key in initkwargs:
+		if key in cls.http_method_names:
+			raise TypeError(
+				'The method name %s is not accepted as a keyword argument '
+				'to %s().' % (key, cls.__name__)
+			)
+		if not hasattr(cls, key):
+			raise TypeError("%s() received an invalid keyword %r. as_view "
+							"only accepts arguments that are already "
+							"attributes of the class." % (cls.__name__, key))
+
+	def view(request, *args, **kwargs):
+		self = cls(**initkwargs)
+		self.setup(request, *args, **kwargs)
+		if not hasattr(self, 'request'):
+			raise AttributeError(
+				"%s instance has no 'request' attribute. Did you override "
+				"setup() and forget to call super()?" % cls.__name__
+			)
+		**return self.dispatch(request, *args, **kwargs)**
+	view.view_class = cls
+	view.view_initkwargs = initkwargs
+
+	# take name and docstring from class
+	update_wrapper(view, cls, updated=())
+
+	# and possible attributes set by decorators
+	# like csrf_exempt from dispatch
+	update_wrapper(view, cls.dispatch, assigned=())
+	**return view**
+```
+- as_view方法返回的是view，view返回的是dispatch方法，dispatch方法也是调用的APIView下的dispatch方法，源码如下：
+```
+路径：rest_framework.views.APIView.dispatch
+
+def dispatch(self, request, *args, **kwargs):
+	"""
+	`.dispatch()` is pretty much the same as Django's regular dispatch,
+	but with extra hooks for startup, finalize, and exception handling.
+	"""
+	self.args = args
+	self.kwargs = kwargs
+	request = self.initialize_request(request, *args, **kwargs)
+	self.request = request
+	self.headers = self.default_response_headers  # deprecate?
+
+	try:
+		self.initial(request, *args, **kwargs)
+
+		# Get the appropriate handler method
+		if request.method.lower() in self.http_method_names:
+			handler = getattr(self, request.method.lower(),
+							  self.http_method_not_allowed)
+		else:
+			handler = self.http_method_not_allowed
+
+		response = handler(request, *args, **kwargs)
+
+	except Exception as exc:
+		response = self.handle_exception(exc)
+
+	self.response = self.finalize_response(request, response, *args, **kwargs)
+	return self.response
+```
+- dispatch返回一个response响应对象，得到请求的响应结果，返回给前端
+# RestFul规范
+- REST: 表征性状态转移(Representational State Transfer)
+- RESTful规范：web数据请求接口设计规范
+
+1. 通常使用https请求
+2. 域名：有api关键字出现
+	- https://api.example.com  (存在跨域问题)
+	- https://example.com/api
+1. 版本：不同版本需要标注
+	- https://example.com/api/v1 |  https://example.com/api/1
+	- https://example.com/api/v2 |  https://example.com/api/2
+1. 资源：请求的目标数据称之为资源，资源一般都有名词复数表示
+	- https://example.com/api/v1/books
+1. 操作方式：不从请求链接体现操作方式，从请求方式上决定操作方式
+	- get：https://example.com/api/v1/books  获取所有
+	- post：https://example.com/api/v1/books  新增一本
+	- put：https://example.com/api/v1/book/1  更新id=1的一本
+	- patch：https://example.com/api/v1/book/1  更新id=1的一本
+	- delete：https://example.com/api/v1/book/1  删除id=1的一本
+1. 资源过滤：通过接口传递参数来过滤资源
+	- https://example.com/api/v1/books?limit=10  限制10条
+1. 状态码：返回数据要标准状态码，通过在数据中 {"status": 200}
+	- SUCCESS(0, "查询成功")
+	- NODATA(1, "非正确，无数据，显示基本信息")
+	- FEAILED(2, "查询失败")
+1. 错误信息：请求失败需要标注错误信息  {"message": "请求参数不合法"}
+1. 操作结果：请求操作成功的返回结果 {"results": []}
+	- get：返回资源列表 | 返回单一资源
+	- post：返回单一新增资源
+	- put：返回更新的资源
+	- patch：返回更新的资源
+	- delete：返回空文档
+1. 子资源返回资源接口：返回的资源如果有子资源，返回子资源的链接地址，如查找书，书的封面图片就可以url表示
+
+# Web应用模式
 1. 在开发Web应用中，有两种应用模式
 	- 前后端不分离【客户端看到的内容和所有界面效果都是由服务端提供】
 	- 前后端分离【把前端的界面效果html，css，js分离到另一个服务端，python服务端只需要返回数据即可】
-#### 环境安装与配置
+# 环境安装与配置
 1. 环境准备
 	```
 	依赖安装：python(3.5+)、django(2.2+)、djangorestframework、pymysql
@@ -280,7 +462,7 @@ Django REST framework
 		]
 		```
 		- 页面访问(http://127.0.0.1:8000/api/)，可以看到DRF提供的API Web浏览页面
-#### APIView视图
+# APIView视图
 - APIView是REST framework提供的所有视图的基类，继承自Django的View父类。
 - APIView与View的不同之处在于：
 	- 传入到视图方法中的是REST framework的Request对象，而不是Django的HttpRequeset对象；
@@ -403,7 +585,7 @@ Django REST framework
 		HTTP_507_INSUFFICIENT_STORAGE
 		HTTP_511_NETWORK_AUTHENTICATION_REQUIRED
 		```
-#### 序列化器-Serializer
+# 序列化器-Serializer
 1. 作用
 	- 序列化,序列化器会把模型对象转换成字典,经过response以后变成json字符串
 	- 反序列化,把客户端发送过来的数据,经过request以后变成字典,序列化器可以把字典转成模型
@@ -1276,7 +1458,7 @@ class StudentModelSerializers(serializers.ModelSerializer):
         fields = ['id', 'name', 'achievement']
 ```
 - 
-#### 视图
+# 视图
 1. 视图中调用Http请求和响应处理类
 	- 什么时候声阴的序列化器需要继承序列化器基类Serializer,什么时候继承模型序列化器类ModelSerializer?
 		- 继承序列化器类Serializer
@@ -1717,7 +1899,7 @@ class StudentModelSerializers(serializers.ModelSerializer):
 			queryset = Student.objects.all()
 			serializer_class = StudentModelSerializers
 		```
-#### 路由Routers
+# 路由Routers
 - 对于视图集ViewSet,我们除了可以自己手动指明请求方式与动作action之间的对应关系外，还可以使用Routers来帮助我们快速实现路由信息。如果是非视图集，不需要使用路由集routers
 - REST framework提供了两个router类,使用方式一致的。结果多一个或少一个根目录url地址的问题而已，用任何一个都可以。
 	- SimpleRouter
@@ -1776,272 +1958,1156 @@ class StudentModelViewSet(ModelViewSet):
     def login2(self, request):
         return Response({'msg': 'login success!'})
 ```
-#### 相关功能组件
-1. 认证
-	- 因为认证组件中需要使用到登录功能，所以我们使用django内置admin站点并创建一个管理员。admin运营站点的访问地址：http://127.0.0.1:8000/admin
-		```
-		python manage.py createsuperuser
-		Username (leave blank to use 'administrator'): admin
-		Email address: admin@123.com
-		Password:
-		Password (again):
-		This password is too short. It must contain at least 8 characters.
-		This password is too common.
-		This password is entirely numeric.
-		Bypass password validation and create user anyway? [y/N]: y
-		Superuser created successfully.
-		```
-		```
-		页面改中文与时区
-		settings.py文件
-		LANGUAGE_CODE = 'zh-hans'
-		TIME_ZONE = 'Asia/Shanghai'
-		```
-	- 可以在配置文件中配置全局默认的认证方案，常见的认证方式：cookie、session、token
-	- site-packages/rest_framework/settings.py 默认配置文件
-	```
-	DEFAULTS = {
-		'DEFAULT_AUTHENTICATION_CLASSES': [
-			'rest_framework.authentication.SessionAuthentication',
-			'rest_framework.authentication.BasicAuthentication'
-		],
-	}
-	```
-	- 也可以在具体的视图类中通过设置authentication_classess类属性来设置单独的不同的认证方式
-	```
-	from rest_framework.authentication import SessionAuthentication, BaseAuthentication
-	from rest_framework.views import APIView
+# 认证
+## Django三种认证方式
+### 系统：session认证
+```
+rest_framework.authentication.SessionAuthentication
+```
+ajax请求通过认证：cookie中要携带 sessionid、csrftoken，请求头中要携带 x-csrftoken
 
-	class ExampleView(APIView):
-		authentication_classes = [SessionAuthentication, BaseAuthentication]
+### 第三方：jwt认证 
+```
+rest_framework_jwt.authentication.JSONWebTokenAuthentication
+```
+ajax请求通过认证：请求头中要携带 authorization，值为 jwt空格token
 
-		def get(self, request):
-			pass
-	```
-	- 认证失败会有两种可能的返回值，这个需要我们配合权限组件来使用：
-		- 401 Unauthorized 未认证
-		- 403 Permission Denied 权限被禁止
-	- 自定义配置
-		```
-		文件: 主应用下创建authentication.py
+### 自定义：基于jwt、其它（常用）
+1. 自定义认证类，继承BaseAuthentication(或其子类)，重写authenticate
+2. authenticate中完成
+    - 拿到认证标识 auth
+    - 反解析出用户 user
+    - 前两步操作失败 返回None => 游客
+    - 前两步操作成功 返回user，auth => 登录用户
+    - 注：如果在某个分支抛出异常，直接定义失败 => 非法用户
+## 流程
+1. 当用户进行登录的时候，运行了登录类的as_view()方法，进入了APIView类的dispatch方法
+2. 执行self.initialize_request这个方法，里面封装了request和认证对象列表等其他参数
+3. 执行self.initial方法中的self.perform_authentication，里面运行了user方法
+4. 再执行了user方法里面的self._authenticate()方法
+（以上是drf源码内容，下面为自定义方法）
+5. 然后执行了自己定义的类中的authenticate方法，自己定义的类继承了BaseAuthentication类，里面有  authenticate方法，如果自己定义的类中没有authenticate方法会报错
+6. 把从authenticate方法得到的user和auth赋值给user和auth方法
+7. 这两个方法把user和auth的值分别赋值给request.user：是登录用户的对象；request.auth：是认证的信息字典
+```
+封装request的源码
+APIView的dispatch中有个self.initialize_request，它返回了一个Request类，它封装了django的request和认证对象列表等其他参数
+
+class APIView(View):
+    # 1.进入了APIView类的dispatch方法
+	def dispatch(self, request, *args, **kwargs):
+
+		self.args = args
+		self.kwargs = kwargs
+		# 2.执行了self.initialize_request这个方法，封装了request和认证对象列表等其他参数
+		request = self.initialize_request(request, *args, **kwargs)
+		self.request = request
+        self.headers = self.default_response_headers  # deprecate?
+
+        try:
+            # 3.执行self.initial方法中的self.perform_authentication，里面运行了user方法
+            self.initial(request, *args, **kwargs)
+
+            # Get the appropriate handler method
+            if request.method.lower() in self.http_method_names:
+                handler = getattr(self, request.method.lower(),
+                                  self.http_method_not_allowed)
+            else:
+                handler = self.http_method_not_allowed
+
+            response = handler(request, *args, **kwargs)
+            
+     # 2.执行了self.initialize_request这个方法，封装了request和认证对象列表等其他参数
+     '''
+     def initialize_request(self, request, *args, **kwargs):
+
+         parser_context = self.get_parser_context(request)
+ 
+         return Request(
+             request,
+             parsers=self.get_parsers(),
+             authenticators=self.get_authenticators(), # [MyAuthentication(),]
+             negotiator=self.get_content_negotiator(),
+             parser_context=parser_context
+         )
+         '''
+        
+    # 3.执行self.initial方法中的self.perform_authentication，里面运行了user方法
+    '''
+    def initial(self, request, *args, **kwargs):
+
+        self.format_kwarg = self.get_format_suffix(**kwargs)
+
+        neg = self.perform_content_negotiation(request)
+        request.accepted_renderer, request.accepted_media_type = neg
+        
+		# 版本方法在这里
+        version, scheme = self.determine_version(request, *args, **kwargs)
+        request.version, request.versioning_scheme = version, scheme
+
+        # 认证 权限 节流三兄弟
+        self.perform_authentication(request)
+        self.check_permissions(request)
+        self.check_throttles(request)
+        '''
+    
+    # 3.执行self.initial方法中的self.perform_authentication，里面运行了user方法
+	def perform_authentication(self, request):
+        request.user
+        
+        
+    # 4、再执行了user方法里面的self._authenticate()方法    
+    @property
+    def user(self):
+        """
+        Returns the user associated with the current request, as authenticated
+        by the authentication classes provided to the request.
+        """
+        if not hasattr(self, '_user'):
+            with wrap_attributeerrors():
+                self._authenticate()
+        return self._user
+```
+## 返回值
+1.  没有携带认证信息，直接返回None => 游客
+2.  有认证信息，校验成功，返回一个元组，第一个参数赋值给request.user，第二个赋值给request.auth
+3.  有认证信息，校验失败，抛异常 => 非法用户
+
+## 示例
+- 因为认证组件中需要使用到登录功能，所以我们使用django内置admin站点并创建一个管理员。admin运营站点的访问地址：http://127.0.0.1:8000/admin
+```
+python manage.py createsuperuser
+Username (leave blank to use 'administrator'): admin
+Email address: admin@123.com
+Password:
+Password (again):
+This password is too short. It must contain at least 8 characters.
+This password is too common.
+This password is entirely numeric.
+Bypass password validation and create user anyway? [y/N]: y
+Superuser created successfully.
+```
+```
+页面改中文与时区
+settings.py文件
+LANGUAGE_CODE = 'zh-hans'
+TIME_ZONE = 'Asia/Shanghai'
+```
+- 可以在配置文件中配置全局默认的认证方案，常见的认证方式：cookie、session、token
+- site-packages/rest_framework/settings.py 默认配置文件
+```
+DEFAULTS = {
+	'DEFAULT_AUTHENTICATION_CLASSES': [
+		'rest_framework.authentication.SessionAuthentication',
+		'rest_framework.authentication.BasicAuthentication'
+	],
+}
+```
+- 也可以在具体的视图类中通过设置authentication_classess类属性来设置单独的不同的认证方式
+```
+from rest_framework.authentication import SessionAuthentication, BaseAuthentication
+from rest_framework.views import APIView
+
+class ExampleView(APIView):
+	authentication_classes = [SessionAuthentication, BaseAuthentication]
+
+	def get(self, request):
+		pass
+```
+- 认证失败会有两种可能的返回值，这个需要我们配合权限组件来使用：
+	- 401 Unauthorized 未认证
+	- 403 Permission Denied 权限被禁止
+- 自定义配置
+```
+文件: 主应用下创建authentication.py
+from rest_framework.authentication import BaseAuthentication
+from django.contrib.auth import get_user_model
+
+
+class CustomAuthentication(BaseAuthentication):
+	"""
+	自定义认证方式
+	"""
+
+	def authenticate(self, request):
 		"""
-		from rest_framework.authentication import BaseAuthentication
-		from django.contrib.auth import get_user_model
+		认证方法
+		request: 本次客户端发送过来的http请求对象
+		"""
+		user = request.query_params.get("user")
+		pwd = request.query_params.get("pwd")
+		if user != "root" or pwd != "pwd":
+			return None
+		# get_user_model获取当前系统中用户表对应的用户模型类
+		user = get_user_model().objects.first()
+		return (user, None)  # 按照固定的返回格式填写 （用户模型对象, None）
+	# 这个方法一般用不到
+	def authenticate_header(self, request):
+		pass
+```
+```
+文件:views.py
+
+from drfdemo.authentication import CustomAuthentication
+
+class CustomView(APIView):
+	# 局部配置
+	authentication_classes = [CustomAuthentication]
+
+	def get(self, request):
+		print(f'request.user:{request.user}')
+		return Response({'msg': 'ok'})
+```
+```
+全局配置
+主应用settings.py
+
+REST_FRAMEWORK = {
+	# 配置认证方式的选项【drf的认证是内部循环遍历每一个注册的认证类，一旦认证通过识别到用户身份，则不会继续循环】
+	'DEFAULT_AUTHENTICATION_CLASSES': (
+		**'drfdemo.authentication.CustomAuthentication',**          # 自定义认证
+		'rest_framework.authentication.SessionAuthentication',  # session认证
+		'rest_framework.authentication.BasicAuthentication',    # 基本认证
+	)
+}
+```
+## JWT拓展
+### 认证流程
+![](uTools_1654330719067.png)
+### 传统token方式和JWT认证方式差异
+1. 传统token方式（空间换时间）
+	- 用户登录成功后，服务端生成一个随机token给用户，并且在服务端(数据库或缓存)中保存一份token，以后用户再来访问时需携带token，服务端接收到token之后，去数据库或缓存中进行校验token的是否超时、是否合法。
+1. JWT方式（时间换空间）
+	- 用户登录成功后，服务端通过jwt生成一个随机token给用户（服务端无需保留token），以后用户再来访问时需携带token，服务端接收到token之后，通过jwt对token进行校验是否超时、是否合法。
+### JWT优势
+1. token只在前端保存，后端只负责校验。
+2. 内部集成了超时时间，后端可以根据时间进行校验是否超时。
+3. 由于内部存在hash256加密，所以用户不可以修改token，只要一修改就认证失败。
+### token被盗怎么办
+1. token的过期时间设置短一些。
+2. token和用户设备指纹信息绑定，但是这样会影响到用户的一些体验，如果恶意APP装载到了你的手机里，此方法无用。
+3. 使用https，这样很难被盗。
+### JWT 和Session、Cookies的不同
+1. 密码签名
+	- JWT 具有加密签名，而 Session Cookies 则没有。
+2. JWT是无状态的
+	- JWT 是无状态的，因为声明被存储在客户端，而不是服务端内存中。
+	- 身份验证可以在本地进行，而不是在请求必须通过服务器数据库或类似位置中进行。这意味着可以对用户进行多次身份验证，而无需与站点或应用程序的数据库进行通信，也无需在此过程中消耗大量资源。
+3. 可扩展性
+	- Session Cookies 是存储在服务器内存中，这就意味着如果网站或者应用很大的情况下会耗费大量的资源。由于 JWT 是无状态的，在许多情况下，它们可以节省服务器资源。因此 JWT 要比 Session Cookies 具有更强的可扩展性。
+4. JWT支持跨域认证
+	- Session Cookies 只能用在单个节点的域或者它的子域中有效。如果它们尝试通过第三个节点访问，就会被禁止。如果你希望自己的网站和其他站点建立安全连接时，这是一个问题。
+	- 使用 JWT 可以解决这个问题，使用 JWT 能够通过多个节点进行用户认证，也就是我们常说的跨域认证
+### JWT和Session、Cookies的选型
+1. 对于只需要登录用户并访问存储在站点数据库中的一些信息的中小型网站来说，Session Cookies通常就能满足。
+2. 如果你有企业级站点，应用程序或附近的站点，并且需要处理大量的请求，尤其是第三方或很多第三方（包括位于不同域的API），则 JWT 显然更适合。
+### JWT实现过程
+#### 加密
+- 用户提交用户名和密码给服务端，如果登录成功，使用jwt创建一个token，并给用户返回，jwt的生成token格式如下，即：由 . 连接的三段字符串组成。
+- 生成规则如下：
+- 第一段HEADER部分，固定包含签名算法和token类型，对此json进行base64url加密，这就是token的第一段。
+```
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+- 第二段PAYLOAD部分，包含一些数据，对此json进行base64Url加密，这就是token的第二段。
+```
+{
+  "sub": "1234567890", 
+  "name": "John Doe",
+  "iat": 1516239022 # 时间戳
+}
+```
+- 第三段SIGNATURE部分，把前两段的base密文通过.拼接起来，然后对其进行HS256加盐再加密，再然后对HS256密文进行base64url加密，最终得到token的第三段。
+```
+base64url(
+    HMACSHA256(
+      base64UrlEncode(header) + "." + base64UrlEncode(payload),
+      your-256-bit-secret (秘钥加盐)
+    )
+)
+```
+- 最后将三段字符串通过 .拼接起来就生成了jwt的token。
+- 注意：base64url加密是先做base64加密，然后再将 - 替代 + 及 _ 替代 /
+#### 解密
+- 一般在认证成功后，把jwt生成的token返回给用户，以后用户再次访问时候需要携带token，此时jwt需要对token进行超时及合法性校验。
+- 第一步: 获取token，将token分割成 header_segment、payload_segment、crypto_segment 三部分
+```
+jwt_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+signing_input, crypto_segment = jwt_token.rsplit(b'.', 1)
+header_segment, payload_segment = signing_input.split(b'.', 1)
+```
+- 第二步: 对第二段进行base64url解密，并获取payload信息，检测token是否已经超时
+```
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "iat": 1516239022 # 超时时间
+}
+```
+- 第三步: 把第1,2端拼接，再次执行HS256加密
+```
+第一步: 第1,2部分密文拼接起来
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwi
+aWF0IjoxNTE2MjM5MDIyfQ
+
+第二步:对前2部分密文进行HS256加密 + 加盐
+密文 = base64解密(SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c)
+如果相等,表示token未被修改过.(认证通过)
+```
+#### 基于Python的pyjwt模块创建jwt的token
+```
+pip3 install pyjwt
+```
+```
+import jwt
+import datetime
+from jwt import exceptions
+SALT = 'iv%x6xo7l7_u9bf_u!9#g#m*)*=ej@bek5)(@u3kh*72+unjv='
+
+def create_token():
+    # 构造header
+    headers = {
+        'typ': 'jwt',
+        'alg': 'HS256'
+    }
+    
+    # 构造payload
+    payload = {
+        'user_id': 1, # 自定义用户ID
+        'username': 'liuly2', # 自定义用户名
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=5) # 超时时间
+    }
+    # 构造signature即token
+    token = jwt.encode(payload=payload, key=SALT, algorithm="HS256", headers=headers).decode('utf-8')
+    return token
+
+if __name__ == '__main__':
+    token = create_token()
+    print(token)
+```
+```
+import jwt
+import datetime
+from jwt import exceptions
+def get_payload(token):
+    """
+    根据token获取payload
+    :param token:
+    :return:
+    """
+    try:
+        # 从token中获取payload【不校验合法性】
+        # unverified_payload = jwt.decode(token, None, False)
+        # print(unverified_payload)
+        # 从token中获取payload【校验合法性】
+        verified_payload = jwt.decode(token, SALT, True)
+        return verified_payload
+    except exceptions.ExpiredSignatureError:
+        print('token已失效')
+    except jwt.DecodeError:
+        print('token认证失败')
+    except jwt.InvalidTokenError:
+        print('非法的token')
+if __name__ == '__main__':
+    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NzM1NTU1NzksInVzZXJuYW1lIjoid3VwZWlxaSIsInVzZXJfaWQiOjF9.xj-7qSts6Yg5Ui55-aUOHJS4KSaeLq5weXMui2IIEJU"
+    payload = get_payload(token)
+```
+#### drf实战应用
+```
+from api.extensions.auth import JwtQueryParamsAuthentication
+from api.utils.jwt_auth import create_token
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from api import models
+
+# 登录视图
+class ProLoginView(APIView):
+    # 登录界面不用做验证
+    authentication_classes = []
+
+    def post(self,request,*args,**kwargs):
+        user = request.data.get('username')
+        pwd = request.data.get('password')
+
+        # 查库返回Queryset类型对象
+        user_object = models.UserInfo.objects.filter(username=user,password=pwd).first()
+        if not user_object:
+            return Response({'code':1000,'error':'用户名或密码错误'})
+        
+		# 根据用户信息生成token
+        token = create_token({'id':user_object.id,'name':user_object.username})
+
+        return Response({'code': 1001, 'data': token})
+
+    
+# 订单视图
+class ProOrderView(APIView):
+    def get(self, request, *args, **kwargs):
+        print(request.user)
+        return Response('订单列表')
+```
+```
+文件：auth.py
+
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.exceptions import AuthenticationFailed
+from django.conf import settings
+import jwt
+from jwt import exceptions
 
 
-		class CustomAuthentication(BaseAuthentication):
-			"""
-			自定义认证方式
-			"""
+# 自定义基于BaseAuthentication的认证方法
+class JwtQueryParamsAuthentication(BaseAuthentication):
+    """
+    用户需要在url中通过参数进行传输token，例如：
+    http://www.pythonav.com?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NzM1NTU1NzksInVzZXJuYW1lIjoid3VwZWlxaSIsInVzZXJfaWQiOjF9.xj-7qSts6Yg5Ui55-aUOHJS4KSaeLq5weXMui2IIEJU
+    """
+    def authenticate(self, request):
+        # 获取token并判断token的合法性，query_params可以获取url中的参数，默认是Queryset对象
+        token = request.query_params.get('token')
+        salt = settings.SECRET_KEY
 
-			def authenticate(self, request):
-				"""
-				认证方法
-				request: 本次客户端发送过来的http请求对象
-				"""
-				user = request.query_params.get("user")
-				pwd = request.query_params.get("pwd")
-				if user != "root" or pwd != "pwd":
-					return None
-				# get_user_model获取当前系统中用户表对应的用户模型类
-				user = get_user_model().objects.first()
-				return (user, None)  # 按照固定的返回格式填写 （用户模型对象, None）
-		```
-		```
-		file:views.py
-		
-		from drfdemo.authentication import CustomAuthentication
+        # 1.切割
+        # 2.解密第二段/判断过期
+        # 3.验证第三段合法性
 
-		class CustomView(APIView):
-			# 局部配置
-			authentication_classes = [CustomAuthentication]
+        try:
+            # 解密token
+            payload = jwt.decode(token, salt, True)
+        except exceptions.ExpiredSignatureError:
+            raise AuthenticationFailed({'code':1003,'error':"token已失效"})
+        except jwt.DecodeError:
+            raise AuthenticationFailed({'code':1004,'error':"token认证失败"})
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed({'code':1005,'error':"非法的token"})
 
-			def get(self, request):
-				print(f'request.user:{request.user}')
-				return Response({'msg': 'ok'})
-		```
-		```
-		全局配置
-		主应用settings.py
-		
-		REST_FRAMEWORK = {
-			# 配置认证方式的选项【drf的认证是内部循环遍历每一个注册的认证类，一旦认证通过识别到用户身份，则不会继续循环】
-			'DEFAULT_AUTHENTICATION_CLASSES': (
-				'drfdemo.authentication.CustomAuthentication',          # 自定义认证
-				'rest_framework.authentication.SessionAuthentication',  # session认证
-				'rest_framework.authentication.BasicAuthentication',    # 基本认证
-			)
-		}
-		```
-		
-1. 权限
-	- 权限控制可以限制用户对于视图的访问和对于具有模型对象的访问。
-		- 在执行视图的as_view()方法的dispatch()方法前，会先进行视图访问权限的判断
-		- 在通过get_object()获取具体模型对象时，会进行模型对象访问权限的判断
-	- 可以在配置文件settings.py中全局设置默认的权限管理类
-	```
-	REST_FRAMEWORK = {
-		'DEFAULT_PERMISSION_CLASSES': (
-			'rest_framework.permissions.IsAuthenticated',
-		)
+        # 三种操作
+        # 1.抛出异常，后续不再执行
+        # 2.return一个元祖（1，2），认证通过；并将其分别赋值给request.user和request.auth
+        # 3.None
+        return(payload,token)
+    
+    
+class JwtAuthorizationAuthentication(BaseAuthentication):
+    """
+    用户需要通过请求头的方式来进行传输token，例如：
+    Authorization:jwt eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NzM1NTU1NzksInVzZXJuYW1lIjoid3VwZWlxaSIsInVzZXJfaWQiOjF9.xj-7qSts6Yg5Ui55-aUOHJS4KSaeLq5weXMui2IIEJU
+    """
+    def authenticate(self, request):
+
+        # 非登录页面需要校验token
+        authorization = request.META.get('HTTP_AUTHORIZATION', '')
+        auth = authorization.split()
+        if not auth:
+            raise exceptions.AuthenticationFailed({'error': '未获取到Authorization请求头', 'status': False})
+        if auth[0].lower() != 'jwt':
+            raise exceptions.AuthenticationFailed({'error': 'Authorization请求头中认证方式错误', 'status': False})
+
+        if len(auth) == 1:
+            raise exceptions.AuthenticationFailed({'error': "非法Authorization请求头", 'status': False})
+        elif len(auth) > 2:
+            raise exceptions.AuthenticationFailed({'error': "非法Authorization请求头", 'status': False})
+
+        token = auth[1]
+        result = parse_payload(token)
+        if not result['status']:
+            raise exceptions.AuthenticationFailed(result)
+
+        # 如果想要request.user等于用户对象，此处可以根据payload去数据库中获取用户对象。
+        return (result, token)
+```
+```
+文件：jwt_auth.py
+
+import jwt
+import datetime
+from django.conf import settings
+
+# 创建生成的token方法
+def create_token(payload, timeout):
+
+    salt = settings.SECRET_KEY
+    
+    # 构造header
+    headers = {
+        'typ': 'jwt',
+        'alg': 'HS256'
+    }
+    
+    # 构造payload
+    payload['exp'] = {datetime.datetime.utcnow() + datetime.timedelta(minutes=timeout)}
+    
+    # 构造signature即token
+    token = jwt.encode(payload=payload, key=salt, algorithm="HS256", headers=headers).decode('utf-8')
+
+    return token
+```
+```
+文件：settings.py
+
+# 全局使用
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES":['api.extensions.auth.JwtQueryParamsAuthentication',]
+}
+```
+
+# 权限
+## 两种实现
+1. 系统：
+	- AllowAny：允许所有用户，校验方法直接返回True
+	- IsAuthenticated：只允许登录用户
+		- 必须request.user和request.user.is_authenticated都通过
+	- IsAuthenticatedOrReadOnly：游客只读，登录用户无限制
+		- get、option、head 请求无限制
+		- 前台请求必须校验 request.user和request.user.is_authenticated
+	- IsAdminUser：是否是后台用户
+		- 校验 request.user和request.user.is_staff    
+		- is_staff(可以登录后台管理系统的用户)
+1. 自定义：基于auth的Group与Permission表
+	- 自定义权限类，继承BasePermission，重写has_permission
+	- has_permission中完成
+		- 拿到登录用户 user <= request.user
+		- 校验user的分组或是权限
+		- 前两步操作失败 返回False => 无权限
+		- 前两步操作成功 返回True => 有权限
+
+## 流程
+1. 当用户执行一个业务的时候，运行了as_view方法，进入了APIView类的dispatch方法
+2. （此处不需要封装request了，因为在认证过程中封装了）
+3. 进入self.initial方法中的self.check_permissions(request)方法
+4. 里面执行了for循环，把每个权限类实例化对象
+5. 执行自己定义的权限类里面的has_permission方法，里面会判断request.user是否存在
+6. 不存在就返回False，存在就返回True
+7. 之后执行self.permission_denied报错方法，返回的是False就报错，可以自定义报错信息，在has_permission方法中写message = {"status": False, "error": "登录成功之后才能评论"}，就实现了自定义报错
+
+## 返回值
+1. True, 有权限，进行下一步认证(频率认证)
+2. False, 无权限，将信息返回给前端
+
+## 默认配置
+- 可以在配置文件settings.py中全局设置默认的权限管理类
+```
+REST_FRAMEWORK = {
+	'DEFAULT_PERMISSION_CLASSES': (
+		'rest_framework.permissions.IsAuthenticated',
+	)
+}
+```
+- 如果未指明，则采用如下默认配置rest_framework/settings.py
+```
+DEFAULTS = {
+	'DEFAULT_PERMISSION_CLASSES': (
+	   'rest_framework.permissions.AllowAny',
+	)
+}
+```
+- 也可以在具体的视图中通过permission_classes属性来进行局部设
+```
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+
+class ExampleView(APIView):
+	permission_classes = (IsAuthenticated,)
+```
+- 提供的权限
+	- AllowAny 允许所有用户，默认权限
+	- IsAuthenticated 仅通过登录认证的用户
+	- IsAdminUser 仅管理员用户
+	- IsAuthenticatedOrReadOnly 已经登录认证的用户可以对数据进行增删改操作，没有登录认证的只能查看数据
+```
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, IsAuthenticatedOrReadOnly
+
+class HomeInfoAPIView(APIView):
+	# permission_classes = [IsAuthenticated]
+	# permission_classes = [IsAdminUser]
+	permission_classes = [IsAuthenticatedOrReadOnly]
+
+	def get(self, request):
+		return Response({'msg': 'ok'})
+
+	def post(self, request):
+		return Response({'msg': 'ok'})
+```
+## 自定义权限
+- 如需自定义权限，需继承rest_framework.permissions.BasePermission父类，并实现以下两个任何一个方法或全部
+	- has_permission(self, request, view)：是否可以访问视图， view表示当前视图对象
+	- has_object_permission(self, request, view, obj)：是否可以访问模型对象， view表示当前视图， obj为模型数据对象
+```
+文件: 主应用下创建permissions.py
+from rest_framework.permissions import BasePermission
+
+class DemoPermission(BasePermission):
+	def has_permission(self, request, view):
+		"""
+		视图权限
+		返回结果为True则表示允许访问视图类
+		request: 本次客户端提交的请求对象
+		view: 本次客户端访问的视图类
+		"""
+		user = request.query_params.get("user")
+		return user == "admin"
+
+	def has_object_permission(self, request, view, obj):
+		"""
+		模型权限
+		返回结果为True则表示允许操作模型对象
+		通常写了has_permission视图权限，就不需要再写这个了
+		obj：本次权限判断的模型对象
+		"""
+		from school.models import Student
+		if (isinstance(obj, Student)):
+			user = request.query_params.get("user")
+			return user == 'admin'
+		return True
+```
+```
+文件：views.py
+
+局部使用
+class StudentInfoAPIView(RetrieveAPIView):
+queryset = Student
+serializer_class = StudentModelSerializers
+permission_classes = [DemoPermission]
+```
+```
+全局配置
+REST_FRAMEWORK = {
+	# 权限全局配置
+	# 'DEFAULT_PERMISSION_CLASSES': [
+	#     # 设置所有视图只能被已经登录认证过的用户访问
+	#     'drfdemo.permissions.DemoPermission',
+	# ]
+}
+```
+# 限流
+- 匿名用户通过ip地址来控制访问频率
+- 已登录用户通过token来控制
+## 实现原理
+- 把所有登录记录时间放在一个列表中，当用户请求网页的时候，用现在的时间减去约束的时间间隔，然后把小于这个时间记录排除，再计算出时间间隙的记录条数，如果其中的条数小于规定的条数则可以访问并且把当前时间添加进列表中，如果大于或等于则不让其访问。
+## 流程
+1. 当用户请求网页的时候，后台允许该界面的url中的as_views()，运行了as_view方法，进入了APIView类的dispatch方法
+2. 进入self.initial方法中的self.check_throttles(request)方法
+3. 循环运行节流类中的allow_request方法
+4. 如果可以访问返回True，如果不能访问则返回False，之后返回check_throttles，如果是False则运行SimpleRateThrottle类中的wait方法得到需要等待的时间在页面上显示
+## 返回值
+1. True，允许访问
+2. False，访问太频繁
+3. wait()返回值：返回一个整数，表示下次还有多久可以访问
+## 示例
+### 方法一(重写原生方法BaseThrottle.allow_request)
+```
+文件：throttle.py
+
+from rest_framework.throttling import BaseThrottle
+import time
+
+# 定义全局变量，用于存放访问记录
+VISIT_RECORD = {}
+
+# 需要继承BaseThrottle
+class VisitThrottle(BaseThrottle):
+    '''60s内只能访问3次'''
+
+    def __init__(self): # 用于await计算剩余访问时间
+        self.history = []
+
+    # 在定义的类中复写allow_request方法，返回True或者False表示可以访问或者访问频率太高
+    def allow_request(self, request, view):
+        # 1.获取用户ip
+        # 方法一：通过原生方法获取用户ip
+        # remote_addr = request.META.get('REMOTE_ADDR')
+
+        # 方法二：通过父方法获取用户唯一标识ip
+        remote_addr = self.get_ident(request)
+        ctime = time.time()
+        # 这是用户第一次访问,将其进行记录，并且返回True，允许继续访问
+        if remote_addr not in VISIT_RECORD:
+            print("没有此IP")
+            VISIT_RECORD[remote_addr] = [ctime,]
+            return True
+        # 如果不是第一次访问，获取所有的记录
+        history = VISIT_RECORD.get(remote_addr)
+        self.history = history
+
+        # 判断最开始的时刻与现在的时刻的差值是否在规定的时间范围内，比如在60s内，如果不在，
+        # 可以去除最开始的时刻记录
+        while history and history[-1] < ctime - 60:
+            # 删掉最后一个
+            history.pop()
+		# 此时列表中的时刻记录都是在规定的时间范围内，判断时刻的个数也就是访问的次数
+        if len(history) < 3:
+            history.insert(0, ctime)
+            return True
+        
+	# 还需要等多少秒才能访问
+    def wait(self):
+        ctime = time.time()
+        return 8-(ctime-self.history[-1])
+```
+```
+全局
+# settings.py
+'DEFAULT_THROTTLE_CLASSES': ['drfdemo.throttle.VisitThrottle'],
+```
+```
+局部使用
+class AuthView(APIView):
+    """
+    用于用户登录认证
+    """
+    throttle_classes = [VisitThrottle,]
+```
+### 方法二（继承内置类）
+```
+from rest_framework.throttling import  SimpleRateThrottle
+
+# 对游客的限制
+class VisitThrottle(SimpleRateThrottle):
+    scope = "Vistor"
+    def get_cache_key(self, request, view):
+        # 唯一表示是IP
+        return self.get_ident(request)
+    
+# 对登陆用户的限制
+class UserThrottle(SimpleRateThrottle):
+    scope = "User"
+    def get_cache_key(self, request, view):
+        # 唯一表示是用户名
+        return self.user.username
+```
+- scope从settings.py中寻找DEFAULT_THROTTLE_RATES字典的Key,就是访问频率限制，scope可以区分不同的函数的不同限制；get_cache_key(self, request, view)返回一个唯一标示用以区分不同的用户，对于匿名用户返回IP保存到缓存中限制访问，对于注册的用户取用户名（唯一）来区分就可以
+```
+全局应用
+
+REST_FRAMEWORK = {
+    ...
+    'DEFAULT_THROTTLE_RATES': {
+        # 对游客的限制每分钟3次
+        'Vistor': '3/m',
+        # 对登陆用户的限制每分钟10次
+        'User': '10/m'
+    }
+}
+```
+```
+主应用settings.py
+
+REST_FRAMEWORK = {
+	# 限流全局配置
+	'DEFAULT_THROTTLE_CLASSES': [  # 限流配置类
+		'rest_framework.throttling.AnonRateThrottle',  # 未认证用户[未登录用户]
+		'rest_framework.throttling.UserRateThrottle',  # 已认证用户[已登录用户]
+	],
+	
+	# 局部配置
+	'DEFAULT_THROTTLE_RATES': {  # 频率配置
+		'anon': '2/day',  # 针对游客的访问频率进行限制，实际上，drf只是识别首字母，但是为了提高代码的维护性，建议写完整单词
+		'user': '5/day',  # 针对会员的访问频率进行限制，
 	}
-	```
-	- 如果未指明，则采用如下默认配置rest_framework/settings.py
-	```
-	DEFAULTS = {
-		'DEFAULT_PERMISSION_CLASSES': (
-		   'rest_framework.permissions.AllowAny',
-		)
+}
+
+DEFAULT_THROTTLE_RATES 可以使用 second, minute, hour 或day来指明周期。
+```
+- 可选限流
+	- AnonRateThrottle
+		- 限制所有匿名未认证用户，使用IP区分用户。【很多公司这样的，IP结合设备信息来判断，当然比IP要靠谱一点点而已】
+		- 使用DEFAULT_THROTTLE_RATES['anon'] 来设置频次
+	- UserRateThrottle
+		- 限制认证用户，使用User模型的 id主键 来区分。
+		- 使用DEFAULT_THROTTLE_RATES['user'] 来设置频次
+	- ScopedRateThrottle
+		- 限制用户对于每个视图的访问频次，使用ip或user id。
+```
+from rest_framework.throttling import UserRateThrottle
+
+class StudentInfoAPIView(RetrieveAPIView):
+	queryset = Student
+	serializer_class = StudentModelSerializers
+	permission_classes = [DemoPermission]
+	throttle_classes = [UserRateThrottle]
+```
+- 自定义限流
+```
+主应用settings.py配置
+
+REST_FRAMEWORK = {
+	# 限流全局配置
+	'DEFAULT_THROTTLE_CLASSES': (  # 限流配置类
+		'rest_framework.throttling.AnonRateThrottle',  # 未认证用户[未登录用户]
+		'rest_framework.throttling.UserRateThrottle',  # 已认证用户[已登录用户]
+		'rest_framework.throttling.ScopedRateThrottle',  # 基于自定义的命名空间限流
+
+	),
+	'DEFAULT_THROTTLE_RATES': {  # 频率配置
+		'vip': '3/day',  # 针对会员的访问频率进行限制，
 	}
-	```
-	- 也可以在具体的视图中通过permission_classes属性来进行局部设
-	```
-	from rest_framework.permissions import IsAuthenticated
-	from rest_framework.views import APIView
+}
+```
+```
+views.py
 
-	class ExampleView(APIView):
-		permission_classes = (IsAuthenticated,)
-	```
-	- 提供的权限
-		- AllowAny 允许所有用户，默认权限
-		- IsAuthenticated 仅通过登录认证的用户
-		- IsAdminUser 仅管理员用户
-		- IsAuthenticatedOrReadOnly 已经登录认证的用户可以对数据进行增删改操作，没有登录认证的只能查看数据
-	```
-	from rest_framework.permissions import IsAuthenticated, IsAdminUser, IsAuthenticatedOrReadOnly
+class VipAPIView(APIView):
+	# 配置自定义限流
+	permission_classes = [IsAuthenticated]
+	throttle_scope = "vip"
 
-	class HomeInfoAPIView(APIView):
-		# permission_classes = [IsAuthenticated]
-		# permission_classes = [IsAdminUser]
-		permission_classes = [IsAuthenticatedOrReadOnly]
+	def get(self, request):
+		return Response({'msg': 'ok'})
+```
+# DRF版本控制
+## 为什么需要版本控制
+我们都知道每一个程序都是有版本的。而且版本也会升级从v1升级到v2、v3、v4·····，但是我们不可能因为新版本出现旧版本就不去维护，因为用户有权选择不更新版本。所以我们就需要对版本进行控制，这个DRF也给我们提供了一些封装好的方法
+## 流程
+1. 当前端来请求时，执行了as_views()方法，如果设置了全局版本或者进入了设置了版本的功能函数，则会先执行APIView类中的dispatch方法，之后再执行initial方法（可以看到将版本信息version和版本控制方案scheme分别赋值给了request.version 和 request.determine_version），然后进入了self.determine_version方法（self.determine_version这个方法是找我们自己定义的版本控制类，没有的话就返回（None,None））
+2. 里面会先判断是否有versioning_class，如果没有就返回(None,None)，就代表没有版本，如果有就执行versioning_class(URLPathVersioning)类中的determine_version方法,它会返回版本
+3. 里面会判断如果获取到的version为空则返回默认版本，并且还要判断版本是否存在允许出现的版本列表中，返回版本之后，再把版本号和版本类分别赋值给request.version和request.versioning_scheme
+![](1431882-20181214203351645-1586263720.png)
+DRF框架提供的版本控制方法（rest_framework.versioning）
+## 用法
+### 基于url的get传参方式(/users?version=v1)
+```
+REST_FRAMEWORK = {
+    'DEFAULT_VERSION': 'v1',            # 默认版本
+    'ALLOWED_VERSIONS': ['v1', 'v2'],   # 允许的版本
+    'VERSION_PARAM': 'version'          # URL中获取值的key
+}
+```
+```
+from django.conf.urls import url, include
+from web.views import TestView
 
-		def get(self, request):
-			return Response({'msg': 'ok'})
+urlpatterns = [
+    url(r'^test/', TestView.as_view(),name='test'),
+]
+```
+```
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.versioning import QueryParameterVersioning
 
-		def post(self, request):
-			return Response({'msg': 'ok'})
-	```
-	- 自定义权限
-	- 如需自定义权限，需继承rest_framework.permissions.BasePermission父类，并实现以下两个任何一个方法或全部
-		- has_permission(self, request, view)
-		- 是否可以访问视图， view表示当前视图对象
-		- has_object_permission(self, request, view, obj)
-		- 是否可以访问模型对象， view表示当前视图， obj为模型数据对象
-		```
-		文件: 主应用下创建permissions.py
-		from rest_framework.permissions import BasePermission
 
-		class DemoPermission(BasePermission):
-			def has_permission(self, request, view):
-				"""
-				视图权限
-				返回结果为True则表示允许访问视图类
-				request: 本次客户端提交的请求对象
-				view: 本次客户端访问的视图类
-				"""
-				user = request.query_params.get("user")
-				return user == "admin"
+class TestView(APIView):
+    versioning_class = QueryParameterVersioning
 
-			def has_object_permission(self, request, view, obj):
-				"""
-				模型权限
-				返回结果为True则表示允许操作模型对象
-				通常写了has_permission视图权限，就不需要再写这个了
-				obj：本次权限判断的模型对象
-				"""
-				from school.models import Student
-				if (isinstance(obj, Student)):
-					user = request.query_params.get("user")
-					return user == 'admin'
-				return True
-		```
-		```
-		file：views.py
-		
-		class StudentInfoAPIView(RetrieveAPIView):
-		queryset = Student
-		serializer_class = StudentModelSerializers
-		permission_classes = [DemoPermission]
-		```
-		```
-		全局配置
-		REST_FRAMEWORK = {
-			# 权限全局配置
-			# 'DEFAULT_PERMISSION_CLASSES': [
-			#     # 设置所有视图只能被已经登录认证过的用户访问
-			#     'rest_framework.permissions.IsAuthenticated',
-			# ]
-		}
-		```
+    def get(self, request, *args, **kwargs):
 
-1. 限流
-	- 可以对接口访问的频次进行限制，以减轻服务器压力，或者实现特定的业务。
-	```
-	主应用settings.py
+        # 获取版本
+        print(request.version)
+        # 获取版本管理的类
+        print(request.versioning_scheme)
 
-	REST_FRAMEWORK = {
-		# 限流全局配置
-		'DEFAULT_THROTTLE_CLASSES': [  # 限流配置类
-			'rest_framework.throttling.AnonRateThrottle',  # 未认证用户[未登录用户]
-			'rest_framework.throttling.UserRateThrottle',  # 已认证用户[已登录用户]
-		],
-		
-		# 局部配置
-		'DEFAULT_THROTTLE_RATES': {  # 频率配置
-			'anon': '2/day',  # 针对游客的访问频率进行限制，实际上，drf只是识别首字母，但是为了提高代码的维护性，建议写完整单词
-			'user': '5/day',  # 针对会员的访问频率进行限制，
-		}
+        # 反向生成URL
+        reverse_url = request.versioning_scheme.reverse('test', request=request)
+        print(reverse_url)
+
+        return Response('GET请求，响应内容')
+
+    def post(self, request, *args, **kwargs):
+        return Response('POST请求，响应内容')
+
+    def put(self, request, *args, **kwargs):
+        return Response('PUT请求，响应内容')
+```
+### 基于url的正则方式(/v1/users/)
+```
+REST_FRAMEWORK = {
+    'DEFAULT_VERSION': 'v1',            # 默认版本
+    'ALLOWED_VERSIONS': ['v1', 'v2'],   # 允许的版本
+    'VERSION_PARAM': 'version'          # URL中获取值的key
+}
+```
+```
+from django.conf.urls import url, include
+from web.views import TestView
+
+urlpatterns = [
+    url(r'^(?P<version>[v1|v2]+)/test/', TestView.as_view(), name='test'),
+]
+```
+```
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.versioning import URLPathVersioning
+
+
+class TestView(APIView):
+    versioning_class = URLPathVersioning
+
+    def get(self, request, *args, **kwargs):
+        # 获取版本
+        print(request.version)
+        # 获取版本管理的类
+        print(request.versioning_scheme)
+
+        # 反向生成URL
+        reverse_url = request.versioning_scheme.reverse('test', request=request)
+        print(reverse_url)
+
+        return Response('GET请求，响应内容')
+
+    def post(self, request, *args, **kwargs):
+        return Response('POST请求，响应内容')
+
+    def put(self, request, *args, **kwargs):
+        return Response('PUT请求，响应内容')
+```
+### 基于accept 请求头方式(Accept: application/json; version=1.0)
+```
+REST_FRAMEWORK = {
+    'DEFAULT_VERSION': 'v1',            # 默认版本
+    'ALLOWED_VERSIONS': ['v1', 'v2'],   # 允许的版本
+    'VERSION_PARAM': 'version'          # URL中获取值的key
+}
+```
+```
+from django.conf.urls import url, include
+from web.views import TestView
+
+urlpatterns = [
+    url(r'^test/', TestView.as_view(), name='test'),
+]
+
+```
+```
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.versioning import AcceptHeaderVersioning
+
+
+class TestView(APIView):
+    versioning_class = AcceptHeaderVersioning
+
+    def get(self, request, *args, **kwargs):
+        # 获取版本 HTTP_ACCEPT头
+        print(request.version)
+        # 获取版本管理的类
+        print(request.versioning_scheme)
+        # 反向生成URL
+        reverse_url = request.versioning_scheme.reverse('test', request=request)
+        print(reverse_url)
+
+        return Response('GET请求，响应内容')
+
+    def post(self, request, *args, **kwargs):
+        return Response('POST请求，响应内容')
+
+    def put(self, request, *args, **kwargs):
+        return Response('PUT请求，响应内容')
+```
+### 基于主机名方法(v1.example.com)
+```
+ALLOWED_HOSTS = ['*']
+REST_FRAMEWORK = {
+    'DEFAULT_VERSION': 'v1',  # 默认版本
+    'ALLOWED_VERSIONS': ['v1', 'v2'],  # 允许的版本
+    'VERSION_PARAM': 'version'  # URL中获取值的key
+}
+```
+```
+from django.conf.urls import url, include
+from web.views import TestView
+
+urlpatterns = [
+    url(r'^test/', TestView.as_view(), name='test'),
+]
+
+```
+```
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.versioning import HostNameVersioning
+
+class TestView(APIView):
+    versioning_class = HostNameVersioning
+
+    def get(self, request, *args, **kwargs):
+        # 获取版本
+        print(request.version)
+        # 获取版本管理的类
+        print(request.versioning_scheme)
+        # 反向生成URL
+        reverse_url = request.versioning_scheme.reverse('test', request=request)
+        print(reverse_url)
+
+        return Response('GET请求，响应内容')
+
+    def post(self, request, *args, **kwargs):
+        return Response('POST请求，响应内容')
+
+    def put(self, request, *args, **kwargs):
+        return Response('PUT请求，响应内容')
+```
+### 基于django路由系统的namespace(example.com/v1/users/）
+```
+REST_FRAMEWORK = {
+    'DEFAULT_VERSION': 'v1',  # 默认版本
+    'ALLOWED_VERSIONS': ['v1', 'v2'],  # 允许的版本
+    'VERSION_PARAM': 'version'  # URL中获取值的key
+}
+```
+```
+from django.conf.urls import url, include
+from web.views import TestView
+
+urlpatterns = [
+    url(r'^v1/', ([
+                      url(r'test/', TestView.as_view(), name='test'),
+                  ], None, 'v1')),
+    url(r'^v2/', ([
+                      url(r'test/', TestView.as_view(), name='test'),
+                  ], None, 'v2')),
+
+]
+```
+```
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.versioning import NamespaceVersioning
+
+
+class TestView(APIView):
+    versioning_class = NamespaceVersioning
+
+    def get(self, request, *args, **kwargs):
+        # 获取版本
+        print(request.version)
+        # 获取版本管理的类
+        print(request.versioning_scheme)
+        # 反向生成URL
+        reverse_url = request.versioning_scheme.reverse('test', request=request)
+        print(reverse_url)
+
+        return Response('GET请求，响应内容')
+
+    def post(self, request, *args, **kwargs):
+        return Response('POST请求，响应内容')
+
+    def put(self, request, *args, **kwargs):
+        return Response('PUT请求，响应内容')
+```
+###  全局使用
+```
+REST_FRAMEWORK = {
+    'DEFAULT_VERSIONING_CLASS':"rest_framework.versioning.URLPathVersioning",
+    'DEFAULT_VERSION': 'v1',
+    'ALLOWED_VERSIONS': ['v1', 'v2'],
+    'VERSION_PARAM': 'version' 
+}
+```
+
+## 自定义（继承内置类determine_version）
+```
+自定义一个版本控制类
+
+class MyVersion(object):
+    def determine_version(self, request, *args, **kwargs):
+        version = request.query_params.get("version")
+        if not version:
+            version = 'v1'
+        return version
+```
+```
+全局使用
+
+REST_FRAMEWORK = {
+    # 这个是默认使用的版本控制类
+    "DEFAULT_VERSIONING_CLASS": "utils.version.MyVersion",     # 这个版本控制类的路径。
+    # 默认使用的的版本 
+    'DEFAULT_VERSION': 'v1',
+    # 允许使用的版本
+    'ALLOWED_VERSIONS': ['v1','v2'],
+    # 版本使用的参数名称
+    'VERSION_PARAM': 'version'
+}
+
+```
+```
+局部使用
+
+from rest_framework.views import APIView
+from rest_framework.versioning import QueryParameterVersioning, URLPathVersioning
+
+class UsersView(APIView):
+    versioning_class = ParamVersion
+    # versioning_class = QueryParameterVersioning
+    # versioning_class = URLPathVersioning
+    
+    def get(self, request, *args, **kwargs):
+        # 获取用户veison
+        print(version)
+        return HttpResponse('用户列表')
+```
+```
+在url中写路由
+
+urlpatterns = [
+    url(r'^version/', include('Version_Demo.urls'))    # 这里用了路由分发  
+]
+urlpatterns = [
+    url(r'^demo/', Version_Demo.as_view()),
+]
+```
+# DRF解析器
+## 原理
+根据content-type，选择对应的解析器去解析request.body中的数据格式，并将其赋值到request.data中
+## 流程
+1. 进入了APIView类的dispatch方法
+2. 通过request.data获取用户请求头
+3. 根据用户请求头和 parser_classes = [JSONParser, FormParser] 中支持的请求头进行比较
+```
+D:/python3.6/Lib/site-packages/rest_framework/settings.py:33
+
+DEFAULTS = {
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser'
+		]
 	}
+```
+## 示例
+```
+局部
 
-	DEFAULT_THROTTLE_RATES 可以使用 second, minute, hour 或day来指明周期。
-	```
-	- 可选限流
-		- AnonRateThrottle
-			- 限制所有匿名未认证用户，使用IP区分用户。【很多公司这样的，IP结合设备信息来判断，当然比IP要靠谱一点点而已】
-			- 使用DEFAULT_THROTTLE_RATES['anon'] 来设置频次
-		- UserRateThrottle
-			- 限制认证用户，使用User模型的 id主键 来区分。
-			- 使用DEFAULT_THROTTLE_RATES['user'] 来设置频次
-		- ScopedRateThrottle
-			- 限制用户对于每个视图的访问频次，使用ip或user id。
-		```
-		from rest_framework.throttling import UserRateThrottle
+from rest_framework.parsers import JSONParser, FormParser
 
-		class StudentInfoAPIView(RetrieveAPIView):
-			queryset = Student
-			serializer_class = StudentModelSerializers
-			permission_classes = [DemoPermission]
-			throttle_classes = [UserRateThrottle]
-		```
-	- 自定义限流
-	```
-	主应用settings.py配置
+class ParserView(APIView):
+    parser_classes = [JSONParser]
 
-	REST_FRAMEWORK = {
-		# 限流全局配置
-		'DEFAULT_THROTTLE_CLASSES': (  # 限流配置类
-			'rest_framework.throttling.AnonRateThrottle',  # 未认证用户[未登录用户]
-			'rest_framework.throttling.UserRateThrottle',  # 已认证用户[已登录用户]
-			'rest_framework.throttling.ScopedRateThrottle',  # 基于自定义的命名空间限流
+    def post(self, request, *args, **kwargs):
+        """
+        允许用户发送JSON格式的数据
+            a. content-type: application/json
+            b. {"name": 'alex', "age": 18}
+        :param request:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        """
+        1. 获取用户请求
+        2. 获取用户请求体
+        3. 根据用户请求头和 parser_classes = [JSONParser, FormParser] 中支持的请求头进行比较
+        4. JSONParser对象中去请求体
+        5. request.data
+        """
+        print(request.data)
+        return HttpResponse('JSON测试')
+```
+```
+全局
 
-		),
-		'DEFAULT_THROTTLE_RATES': {  # 频率配置
-			'vip': '3/day',  # 针对会员的访问频率进行限制，
-		}
-	}
-	```
-	```
-	views.py
+REST_FRAMEWORK = {
+    # JSONParser: 表示只能解析 application/json 请求头
+    # FormParser: 表示只能解析 application/x-www-form-urlencoded 请求头
+	"DEFAULT_PARSER_CLASSES":  ["rest_framework.JSONParser", "rest_framework.FormParser"]
+}
+```
 
-	class VipAPIView(APIView):
-		# 配置自定义限流
-		permission_classes = [IsAuthenticated]
-		throttle_scope = "vip"
-
-		def get(self, request):
-			return Response({'msg': 'ok'})
-	```
-1. 过滤Filtering
+# 过滤Filtering
 	- 对于列表数据可能需要根据字段进行过滤，我们可以通过添加django-fitlter扩展来增强支持
 	```
 	pip install django-filter
@@ -2069,7 +3135,7 @@ class StudentModelViewSet(ModelViewSet):
 			serializer_class = StudentModelSerializers
 			filter_fields = ['name', 'age'] # 表示根据name和age字段筛选
 		```
-1. 排序Ordering
+# 排序Ordering
 	- REST framework提供了OrderingFilter过滤器来帮助我们快速指明数据按照指定字段进行排序
 	- 在类视图中设置filter_backends，使用rest_framework.filters.OrderingFilter过滤器，REST framework会在请求的查询字符串参数中检查是否包含了ordering参数，如果包含了ordering参数，则按照ordering参数指明的排序字段对数据集进行排序。
 	- 前端可以传递的ordering参数的可选字段值需要在ordering_fields中指明。
@@ -2114,79 +3180,85 @@ class StudentModelViewSet(ModelViewSet):
 			# 局部过滤
 			filter_fields = ['id', 'age']
 		```
-1. 分页Pagination
-	- django默认提供的分页器主要使用于前后端不分离的业务场景，所以REST framework也提供了分页的支持
-	- 全局配置
-	```
-	主应用settings.py
-	
-	REST_FRAMEWORK = {
-		'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # 页码分页
-		# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination', # 偏移量分页
-	    'PAGE_SIZE': 10  # 每页数目
-	}
-	```
-	```
-	from rest_framework.generics import ListAPIView
-	from school.models import Student
-	from school.serializers import StudentModelSerializers
+# 分页Pagination
+我们数据库有几千万条数据，这些数据需要展示，我们不可能直接从数据库把数据全部读取出来，这样会给内存造成特别大的压力，有可能还会内存溢出，所以希望一点一点的取，然后通过分页展示，但是在数据量特别大的时候，我们的分页会越往后读取速度越慢，怎么能让我的查询速度变快？drf给我们提供了三种分页方式
+## 步骤
+1. 数据库查询
+2. 调用分页器
+3. 构建序列化器, 进行序列化操作, 返回数据	
 
-	class PageAPIView(ListAPIView):
-		queryset = Student.objects.all()
-		serializer_class = StudentModelSerializers
-	```
-	```
-	from rest_framework.generics import ListAPIView
-	from school.models import Student
-	from school.serializers import StudentModelSerializers
+## 使用	
+### 全局配置
+```
+主应用settings.py
 
- 	class PageAPIView(ListAPIView):
-		queryset = Student.objects.all()
-		serializer_class = StudentModelSerializers
-		pagination_class = None  # 关闭全局分页效果
-	```
-	- 局部分页
-	```
-	主应用settings.py
-	
-	REST_FRAMEWORK = {
-		# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # 页码分页
-		# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination', # 偏移量分页
-	    'PAGE_SIZE': 10  # 每页数目
-	}
-	```
-	```
-	from rest_framework.generics import ListAPIView
-	from school.models import Student
-	from school.serializers import StudentModelSerializers
-	from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
+REST_FRAMEWORK = {
+	'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # 页码分页
+	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination', # 偏移量分页
+	'PAGE_SIZE': 10  # 每页数目
+}
+```
+```
+from rest_framework.generics import ListAPIView
+from school.models import Student
+from school.serializers import StudentModelSerializers
 
-	class PageAPIView(ListAPIView):
-		queryset = Student.objects.all()
-		serializer_class = StudentModelSerializers
-		# 局部分页
-		pagination_class = PageNumberPagination
-	```
-	- 自定义分页器
-	```
-	from rest_framework.generics import ListAPIView
-	from school.models import Student
-	from school.serializers import StudentModelSerializers
-	from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
+class PageAPIView(ListAPIView):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
+```
+```
+from rest_framework.generics import ListAPIView
+from school.models import Student
+from school.serializers import StudentModelSerializers
 
-	# 自定义分页器
-	class **PagePagination**(PageNumberPagination):
-		page_query_param = 'page'  # 代表页码的变量名
-		page_size_query_param = 'size'  # 每一页数据的变量名
-		page_size = 4  # 每一页的数据量
-		max_page_size = 5  # 允许调整的每一页最大数量
+class PageAPIView(ListAPIView):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
+	pagination_class = None  # 关闭全局分页效果
+```
+### 局部分页
+```
+主应用settings.py
 
-	class PageAPIView(ListAPIView):
-		queryset = Student.objects.all()
-		serializer_class = StudentModelSerializers
-		pagination_class = **PagePagination**
-	```
-1. 异常处理 Exceptions
+REST_FRAMEWORK = {
+	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # 页码分页
+	# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination', # 偏移量分页
+	'PAGE_SIZE': 10  # 每页数目
+}
+```
+```
+from rest_framework.generics import ListAPIView
+from school.models import Student
+from school.serializers import StudentModelSerializers
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
+
+class PageAPIView(ListAPIView):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
+	# 局部分页
+	pagination_class = PageNumberPagination
+```
+### 自定义分页器
+```
+from rest_framework.generics import ListAPIView
+from school.models import Student
+from school.serializers import StudentModelSerializers
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
+
+# 自定义分页器
+class **PagePagination**(PageNumberPagination):
+	page_query_param = 'page'  # 代表页码的变量名
+	page_size_query_param = 'size'  # 每一页数据的变量名
+	page_size = 4  # 每一页的数据量
+	max_page_size = 5  # 允许调整的每一页最大数量
+
+class PageAPIView(ListAPIView):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
+	pagination_class = **PagePagination**
+```
+# 异常处理 Exceptions
 	- REST framework本身在APIView提供了异常处理，但是仅针对drf内部现有的接口开发相关的异常进行格式处理，但是开发中我们还会使用到各种的数据或者进行各种网络请求，这些都有可能导致出现异常，这些异常在中是没有进行处理的，所以就会抛给django框架了，django框架会进行组织错误信息，作为htm页面返回给客户端，所在在前后端分离项目中，可能JS无法理解或者无法接收到这种数据，甚至导致JS出现措误的情况。因此为了避免出现这种情况，我们可以自定义一个属于自己的异常处理函数，对于无法处理的异常，我们自己编写异常处理的代码逻辑。
 	- 针对于现有的的异常处理进行额外添加属于开发者自己的逻辑代码，一般我们编写的异常处理函数，会写一个公共的目录下或者主应用目录下。这里主应用下直接创建一个excepitions.py
 	```
