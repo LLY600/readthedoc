@@ -1459,452 +1459,455 @@ class StudentModelSerializers(serializers.ModelSerializer):
 ```
 - 
 # 视图
-1. 视图中调用Http请求和响应处理类
-	- 什么时候声阴的序列化器需要继承序列化器基类Serializer,什么时候继承模型序列化器类ModelSerializer?
-		- 继承序列化器类Serializer
-			- 字段声明
-			- 验证
-			- 添加/保存数据功能
-		- 继承模型序列化器类Modelseria1izer
-			- 字段声明[可近，看黹要]
-			- Meta声明
-			- 验证
-			- 添加/保存数据功能[可选]
-	- 看数据是否从mysql数据库中获取，如果是则使用ModelSerializer,不是则使用Serializer
-	- **http请求响应**
-		- drf除了在数据序列化部分简写代码以外,还在视图中提供了简写操作,所以在django有的django.views.View基础上,d倒封装了多个视图子类出来提供给我们使用。
-		- drf提供的视图的主要作用:
-			- 控制序列化器的执行(检验、保存、转换数据)
-			- 控制数据库查询的执行
-			- 调用请求类和响应类（这两个类也是由drf帮我们再次扩展了一些功能类)
-	- 请求与响应
-		- 内容协商:drf在django原有的基础上,新增了—个request对象继承到了APIView视图类,并在django原有的HttpResponse响应类的基础上实现了一个子类rest_framework.response.Response响应类。这两个类,都是基于内容协商来完成数据的格式转换的。
-		- request->parser解析类->识别客户端请求头中的Content-Type完成数据转换成>类字典(QueryDict,字典的子类)
-		- response->renderer渲染类->识别客户端请求头的Accept来提取客户端期望返回的数据格式,->转换成客户端的期望格式数据。如果客户端没有申明Accept，则按照Content-Type格式进行转换
-		- **Request**
-		- REST framework传入视图的requests对象不再是Django默认的HttpRequest象,而是REST framework提供的扩展了HttpRequest类的Requests类的对象。
-		- REST framework提供了Parser解析器,在接收到请求后会自动根据Content-Type指明的请求数据类型(如JSON.表单等)将请求数据进行parse解析,解析为类字典[QueryDict]对象保存到Request对象中。
-		- Request对象的数据是自动根据前端发送数据的格式进行解析之后的结果,
-		- 无论前端发送的哪种格式的数据,我们都可以以统一的方式读取数据
-		- 基本属性
-			- .data
-				- request.data返回解析之后的请求体数据。类似于Django标准的 request.Post和request.FILES属性,但提供如下特性:
-					- 包含了解析之后的文件和非文件数据
-					- 包含了对POST、PUT、PATCH请求方式解析后的数据
-					- 利用了REST framework的parsers解析器,不仅支持表单类型数据,也支持JSON据
-			- .query_params（查询参数、查询字符串）
-				- request.query_params与Django标准的request.Get相同,只是更换了更正确的名称而已,
-			- request._request
-				- 获取django封装的Request对象
-		- **Response**
-			```
-			rest_framework.response.Response
-			```
-			- REST framework供了一个响应类 Response，使用该类构造响应对象时,响应的具体数据内容会被转换(render染器)成符合前端需求的类型。
-			- REST framework供了Renderer渲染器,用来根据请求头中的Accept (接收数据类型声明)来自动转换响应数据到对应格式。如果前端请求中未进行Accept明,则会采用Content-Type式处理响应数据,我们可以通过配置来修改默认响应格式。
-			- 可以在源码rest_framework.settings 找所有的drf默认配置项
-			```
-			REST FRAMEWORK={
-			'DEFAULT_RENDERER_CLASSES':( # 默认响应渲染类
-				'rest_framework.renderers.JSONRenderer, # json渲染器,返回json数据
-				'rest_framework.renderers.BrowsableAPIRenderer, # 浏览器API染器,返同调试界面，否则只能看到JSON字符串形式
-				)
-			}
-			```
-			- 构造方式
-				- Response(data,status=None,template_name=None,headers=None,content_type=None)
-				- drf的响应处理类和请求处理类不一样，Response就是django的HttpResponse响应处理类的子类。
-				- data数据不要是render处理之后的数据，只需传递oython的内建类型数据即可，REST framework会使用renderer渲染器处理data。
-				- data不能是复杂结构的数据，如Django的模型类对象，对于这样的数据我们可以使用Serializer序列化器序列化处理后(转为了Python字典类型)再传递给data参数.
-				- 参数说明：
-					- data:为响应准备的序列化处理后的数据
-					- status:状态码，默认200；
-					- template_name:模板名称，如果使用HTMLRenderer时需指明：
-					- headers:用于存放响应头信息的字典；
-					- content_type:响应数据的Content-Type,通常此参数无需传递，REST framework:会根据前端所需类型数据来设置该参数。
-			- response对象的属性（工作很少用）
-				- .data
-				- 传给response对象的序列化后，但尚未render处理的数据
-				- .status code
-				- 状态码的数字
-				- .content
-				- 经过render处理后的响应数据
-			- 状态码
-				- 为了方便设置状态码，REST framewrok在rest_framework.status模块中提供了常用http状态码的常量。
-2. 视图作用
+## 参考[https://blog.csdn.net/LHQ626/article/details/118400296](https://blog.csdn.net/LHQ626/article/details/118400296)
+![](uTools_1654421118321.png)
+## 视图中调用Http请求和响应处理类
+1. 什么时候声明的序列化器需要继承序列化器基类Serializer,什么时候继承模型序列化器类ModelSerializer?
+	- 继承序列化器类Serializer
+		- 字段声明
+		- 验证
+		- 添加/保存数据功能
+	- 继承模型序列化器类Modelseria1izer
+		- 字段声明[可近，看黹要]
+		- Meta声明
+		- 验证
+		- 添加/保存数据功能[可选]
+1. 看数据是否从mysql数据库中获取，如果是则使用ModelSerializer,不是则使用Serializer
+### **http请求响应**
+1. drf除了在数据序列化部分简写代码以外,还在视图中提供了简写操作,所以在django有的django.views.View基础上,d倒封装了多个视图子类出来提供给我们使用。
+2. drf提供的视图的主要作用:
+	- 控制序列化器的执行(检验、保存、转换数据)
+	- 控制数据库查询的执行
+	- 调用请求类和响应类（这两个类也是由drf帮我们再次扩展了一些功能类)
+### 请求与响应
+- 内容协商:drf在django原有的基础上,新增了—个request对象继承到了APIView视图类,并在django原有的HttpResponse响应类的基础上实现了一个子类rest_framework.response.Response响应类。这两个类,都是基于内容协商来完成数据的格式转换的。
+- request->parser解析类->识别客户端请求头中的Content-Type完成数据转换成>类字典(QueryDict,字典的子类)
+- response->renderer渲染类->识别客户端请求头的Accept来提取客户端期望返回的数据格式,->转换成客户端的期望格式数据。如果客户端没有申明Accept，则按照Content-Type格式进行转换
+#### **Request**
+1. REST framework传入视图的requests对象不再是Django默认的HttpRequest象,而是REST framework提供的扩展了HttpRequest类的Requests类的对象。
+2. REST framework提供了Parser解析器,在接收到请求后会自动根据Content-Type指明的请求数据类型(如JSON.表单等)将请求数据进行parse解析,解析为类字典[QueryDict]对象保存到Request对象中。
+3. Request对象的数据是自动根据前端发送数据的格式进行解析之后的结果,
+4. 无论前端发送的哪种格式的数据,我们都可以以统一的方式读取数据
+5. 基本属性
+	- .data
+		- request.data返回解析之后的请求体数据。类似于Django标准的 request.Post和request.FILES属性,但提供如下特性:
+			- 包含了解析之后的文件和非文件数据
+			- 包含了对POST、PUT、PATCH请求方式解析后的数据
+			- 利用了REST framework的parsers解析器,不仅支持表单类型数据,也支持JSON据
+	- .query_params（查询参数、查询字符串）
+		- request.query_params与Django标准的request.Get相同,只是更换了更正确的名称而已,
+	- request._request
+		- 获取django封装的Request对象
+#### **Response**
+```
+rest_framework.response.Response
+```
+- REST framework供了一个响应类 Response，使用该类构造响应对象时,响应的具体数据内容会被转换(render染器)成符合前端需求的类型。
+- REST framework供了Renderer渲染器,用来根据请求头中的Accept (接收数据类型声明)来自动转换响应数据到对应格式。如果前端请求中未进行Accept明,则会采用Content-Type式处理响应数据,我们可以通过配置来修改默认响应格式。
+- 可以在源码rest_framework.settings 找所有的drf默认配置项
+```
+REST FRAMEWORK={
+'DEFAULT_RENDERER_CLASSES':( # 默认响应渲染类
+	'rest_framework.renderers.JSONRenderer, # json渲染器,返回json数据
+	'rest_framework.renderers.BrowsableAPIRenderer, # 浏览器API染器,返同调试界面，否则只能看到JSON字符串形式
+	)
+}
+```
+- 构造方式
+	- Response(data,status=None,template_name=None,headers=None,content_type=None)
+	- drf的响应处理类和请求处理类不一样，Response就是django的HttpResponse响应处理类的子类。
+	- data数据不要是render处理之后的数据，只需传递oython的内建类型数据即可，REST framework会使用renderer渲染器处理data。
+	- data不能是复杂结构的数据，如Django的模型类对象，对于这样的数据我们可以使用Serializer序列化器序列化处理后(转为了Python字典类型)再传递给data参数.
+	- 参数说明：
+		- data:为响应准备的序列化处理后的数据
+		- status:状态码，默认200；
+		- template_name:模板名称，如果使用HTMLRenderer时需指明：
+		- headers:用于存放响应头信息的字典；
+		- content_type:响应数据的Content-Type,通常此参数无需传递，REST framework:会根据前端所需类型数据来设置该参数。
+- response对象的属性（工作很少用）
+	- .data
+	- 传给response对象的序列化后，但尚未render处理的数据
+	- .status code
+	- 状态码的数字
+	- .content
+	- 经过render处理后的响应数据
+- 状态码
+	- 为了方便设置状态码，REST framewrok在rest_framework.status模块中提供了常用http状态码的常量。
+## 视图作用
 	- 控制序列化器的执行（检验、保存、转换数据）
 	- 控制数据库模型的操作
-1. 普通视图
-	- 两个视图基类
-		- APIView基本视图类
-			```
-			rest_framework.views.APIView
-			```
-			- APIView是REST framework提供的所有视图的基类，继承自Diango的view父类。
-			- APIView与view的不同之处在于：
-				- 传入到视图方法中的是REST framework的Request对象，而不是Django的HttpRequeset对象；
-				- 视图方法可以返回REST framework的Response对象，视图会为响应数据设置(render)符合前端期望要求的格式：
-				- 任何APIException异常都会被捕获到，并且处理成合适格式的响应信息返回给客户端，django的View中所有异常全部以HTML格式显示，drf的APIVlewi或者APIView的子类会自动根据客户端的Accepti进行错误信息的格式转换。
-				- 重新声明了一个新的as_view方法并在dispatch()进行路由分发前，会对请求的客户端进行身份认证、权限检查、流量控制。
-			- APIView除了继承了View原有的属性方法以外，还新增了类属性：
-				- authentication classes列表或元组，身份认证类
-				- permissoin classes列表或元组，权限检查类
-				- throttle classes列表或元祖，流量控制类
-			- 在APIView中仍以常规的类视图定义方法来实现get()、post()或者其他请求方式的方法。
-			```
-			文件: serializers.py
+## 普通视图
+### 两个视图基类
+#### APIView基本视图类
+```
+rest_framework.views.APIView
+```
+- APIView是REST framework提供的所有视图的基类，继承自Diango的view父类。
+- APIView与view的不同之处在于：
+	- 传入到视图方法中的是REST framework的Request对象，而不是Django的HttpRequeset对象；
+	- 视图方法可以返回REST framework的Response对象，视图会为响应数据设置(render)符合前端期望要求的格式：
+	- 任何APIException异常都会被捕获到，并且处理成合适格式的响应信息返回给客户端，django的View中所有异常全部以HTML格式显示，drf的APIVlewi或者APIView的子类会自动根据客户端的Accepti进行错误信息的格式转换。
+	- 重新声明了一个新的as_view方法并在dispatch()进行路由分发前，会对请求的客户端进行身份认证、权限检查、流量控制。
+- APIView除了继承了View原有的属性方法以外，还新增了类属性：
+	- authentication classes列表或元组，身份认证类
+	- permissoin classes列表或元组，权限检查类
+	- throttle classes列表或元祖，流量控制类
+- 在APIView中仍以常规的类视图定义方法来实现get()、post()或者其他请求方式的方法。
+- 适用于不需要数据库操作，如果操作数据库需要自己代码实现
+```
+文件: serializers.py
 
-			from rest_framework import serializers
-			from students_origin.models import Student
+from rest_framework import serializers
+from students_origin.models import Student
 
-			class StudentModelSerializers(serializers.ModelSerializer):
-				class Meta:
-					model = Student
-					fields = "__all__"
-			```
-			```
-			文件: views.py
+class StudentModelSerializers(serializers.ModelSerializer):
+	class Meta:
+		model = Student
+		fields = "__all__"
+```
+```
+文件: views.py
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from students_origin.models import Student
+from viewdemo.serializers import StudentModelSerializers
+
+
+class StudentAPIView(APIView):
+	def get(self, request):
+		student_list = Student.objects.all()
+		serializer = StudentModelSerializers(instance=student_list, many=True)
+		return Response(serializer.data, status=status.HTTP_200_OK)
+
+	def post(self, request):
+		serializer = StudentModelSerializers(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class StudentInfoAPIView(APIView):
+	def get(self, request, pk):
+		try:
+			student = Student.objects.get(pk=pk)
+		except Student.DoesNotExist:
+			return Response(status=status.HTTP_404_NOT_FOUND)
+		serializer = StudentModelSerializers(instance=student)
+		return Response(serializer.data)
+
+	def put(self, request, pk):
+		try:
+			student = Student.objects.get(pk=pk)
+		except Student.DoesNotExist:
+			return Response(status=status.HTTP_404_NOT_FOUND)
+		serializer = StudentModelSerializers(instance=student, data=request.data)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+	def post(self, request):
+		serializer = StudentModelSerializers(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+	def delete(self, request, pk):
+		try:
+			Student.objects.get(pk=pk).delete()
+		except Student.DoesNotExist:
+			pass
+		return Response(status=status.HTTP_204_NO_CONTENT)
+```
+```
+文件: urls.py
+
+from django.urls import path, re_path
+from . import views
+
+urlpatterns = [
+	path('students/', views.StudentAPIView.as_view()),
+	re_path(r'^students/(?P<pk>\d+)/$', views.StudentInfoAPIView.as_view())
+]
+```
+#### GenericAPIView通用视图类
+- 通用视图类主要作用就是把视图中的独特的代码抽取出来，让视图方法中的代码更加通用，方便把通用代码进行简写。
+```
+rest_framework.generics.GenericAPIView
+```
+- 继承自APIView,主要增加了操作序列化器和数据库查询的方法，作用是为下面Mixi扩展类的执行提供方法支持。通常在使用时，可搭配一个或多个Mixin扩展类。
+- 提供的关于序列化器使用的属性与方法
+	- **属性：**
+	- serializer_class指明视图使用的序列化器类
+	- **方法：**
+	- get_serializer_class(self)
+	- 当出现一个视图类中调用多个序列化器时，那么可以通过条件判断在get serializer_class方法中通过返回不同的序列化器类名就可以让视图方法执行不同的序列化器对象了。
+	- 返回序列化器类，默认返回serializer_class,可以重写
+	- get_serializer(self,args,*kwargs)
+	- 返回序列化器对像，主要用来提供给Mixi扩展类使用，如果我们在视图中想要获取序列化器对像，也可以直接调用此方法。
+	- 注意，该方法在提供序列化器对象的时候，会向序列化器对象的context属性补充三个数据：request、format、view,这三个数据对象可以在定义序列化器时使用。
+	- request当前视图的请求对象
+	- view当前请求的类视图对象
+	- format当前请求期望返回的数据格式
+- 提供的关于数据库查询的属性与方法
+	- **属性：**
+	- queryset指明使用的数据查询集
+	- **方法：**
+	- get_queryset(self)
+	- 返回视图使用的查询集，主要用来提供给Mix扩展类使用，是列表视图与详情视图获取数据的基础，默认返回queryset属性，可以重写
+	- get_object(self)
+	- 返回详情视图所需的模型类数据对象，主要用来提供给Mixi扩展类使用。
+	- 在试图中可以调用该方法获取详情信息的模型类对象。
+	- 若详情访问的模型类对象不存在，会返回404。
+	- 该方法会默认使用APIView提供的check_object_permissions方法检查当前对象是否有权限被访问。
+- 其他可以设置的属性
+	- pagination_class指明分页控制类
+	- filter_backends指明数据过滤控制后端
+```
+class StudentGenericAPIView(GenericAPIView):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
+
+	def get(self, request):
+		queryset = self.get_queryset()  # GenericAPIView提供的方法
+		serializer = self.get_serializer(instance=queryset, many=True)
+		return Response(serializer.data)
+
+	def post(self, request):
+		serializer = self.get_serializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class StudentInfoGenericAPIView(GenericAPIView):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
+
+	def get(self, request, pk):
+		instance = self.get_object()
+		serializer = self.get_serializer(instance=instance)
+		return Response(serializer.data)
+
+	def put(self, request, pk):
+		instance = self.get_object()
+		serializer = self.get_serializer(instance=instance, data=request.data)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+	def delete(self, request, pk):
+		self.get_object().delete()
+		return Response(status=status.HTTP_204_NO_CONTENT)
+```
 			
-			from rest_framework import status
-			from rest_framework.response import Response
-			from rest_framework.views import APIView
+### 五个视图扩展类
+```
+file:views.py
 
-			from students_origin.models import Student
-			from viewdemo.serializers import StudentModelSerializers
+from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 
+class StudentMixView(GenericAPIView, ListModelMixin, CreateModelMixin):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
 
-			class StudentAPIView(APIView):
-				def get(self, request):
-					student_list = Student.objects.all()
-					serializer = StudentModelSerializers(instance=student_list, many=True)
-					return Response(serializer.data, status=status.HTTP_200_OK)
+	def get(self, request):
+		return self.list(request)
 
-				def post(self, request):
-					serializer = StudentModelSerializers(data=request.data)
-					serializer.is_valid(raise_exception=True)
-					serializer.save()
-					return Response(serializer.data, status=status.HTTP_201_CREATED)
+	def post(self, request):
+		return self.create(request)
 
 
-			class StudentInfoAPIView(APIView):
-				def get(self, request, pk):
-					try:
-						student = Student.objects.get(pk=pk)
-					except Student.DoesNotExist:
-						return Response(status=status.HTTP_404_NOT_FOUND)
-					serializer = StudentModelSerializers(instance=student)
-					return Response(serializer.data)
+class StudentInfoMixView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
 
-				def put(self, request, pk):
-					try:
-						student = Student.objects.get(pk=pk)
-					except Student.DoesNotExist:
-						return Response(status=status.HTTP_404_NOT_FOUND)
-					serializer = StudentModelSerializers(instance=student, data=request.data)
-					serializer.is_valid(raise_exception=True)
-					serializer.save()
-					return Response(serializer.data, status=status.HTTP_201_CREATED)
+	def get(self, request, pk):
+		return self.retrieve(request, pk=pk)
 
-				def post(self, request):
-					serializer = StudentModelSerializers(data=request.data)
-					serializer.is_valid(raise_exception=True)
-					serializer.save()
-					return Response(serializer.data, status=status.HTTP_201_CREATED)
+	def put(self, request, pk):
+		return self.update(request, pk=pk)
 
-				def delete(self, request, pk):
-					try:
-						Student.objects.get(pk=pk).delete()
-					except Student.DoesNotExist:
-						pass
-					return Response(status=status.HTTP_204_NO_CONTENT)
-			```
-			```
-			文件: urls.py
-			
-			from django.urls import path, re_path
-			from . import views
+	def delete(self, request, pk):
+		return self.destroy(request, pk=pk)
+```
+### 九个视图子类
+- 上面的接口代码还可以续更加的精简，drf在使用GenericAPIView和Mixins进行组合以后，还是供了视图子类。
+- 视图子类是通用视图类和模型甘扩展类的子类，提供了各种的视图方法调用mixins操作
+	- ListAPIView = GenericAPIView + ListModelMixin 获取多条数据的视图方法
+	- CreateAPIView = GenericAPIView + CreateModelMixin 添加一条数据的视图方法
+	- RetrieveAPIV1ew=GenericAPIView + RetrieveModeLMiXin 获取一条数据的视图方法
+	- UpdateAPIView = GenericAPIView + UpdateModelMixin 更新一条数据的视图方法
+	- DestroyAPIView  = GenericAPIView + DestroyModelMixin 删除一条数据的视图方法
+- 组合视图子类
+	- ListcreateAPIview = ListAPIView + CreateAPIView
+	- RetrieveUpdateAPIView = RetrieveAPIView + UpdateAPIView
+	- RetrieveDestroyAPIView = RetrieveAPIView + DestroyAPIView
+	- RetrieveUpdateDestroyAPIView = RetrieveAPIView + UpdateAPIView + DestroyAPIView
+```
+file:views.py
 
-			urlpatterns = [
-				path('students/', views.StudentAPIView.as_view()),
-				re_path(r'^students/(?P<pk>\d+)/$', views.StudentInfoAPIView.as_view())
-			]
-			```
-		- GenericAPIView通用视图类
-			- 通用视图类主要作用就是把视图中的独特的代码抽取出来，让视图方法中的代码更加通用，方便把通用代码进行简写。
-			```
-			rest_framework.generics.GenericAPIView
-			```
-			- 继承自APIView,主要增加了操作序列化器和数据库查询的方法，作用是为下面Mixi扩展类的执行提供方法支持。通常在使用时，可搭配一个或多个Mixin扩展类。
-			- 提供的关于序列化器使用的属性与方法
-				- **属性：**
-				- serializer_class指明视图使用的序列化器类
-				- **方法：**
-				- get_serializer_class(self)
-				- 当出现一个视图类中调用多个序列化器时，那么可以通过条件判断在get serializer_class方法中通过返回不同的序列化器类名就可以让视图方法执行不同的序列化器对象了。
-				- 返回序列化器类，默认返回serializer_class,可以重写
-				- get_serializer(self,args,*kwargs)
-				- 返回序列化器对像，主要用来提供给Mixi扩展类使用，如果我们在视图中想要获取序列化器对像，也可以直接调用此方法。
-				- 注意，该方法在提供序列化器对象的时候，会向序列化器对象的context属性补充三个数据：request、format、view,这三个数据对象可以在定义序列化器时使用。
-				- request当前视图的请求对象
-				- view当前请求的类视图对象
-				- format当前请求期望返回的数据格式
-			- 提供的关于数据库查询的属性与方法
-				- **属性：**
-				- queryset指明使用的数据查询集
-				- **方法：**
-				- get_queryset(self)
-				- 返回视图使用的查询集，主要用来提供给Mix扩展类使用，是列表视图与详情视图获取数据的基础，默认返回queryset属性，可以重写
-				- get_object(self)
-				- 返回详情视图所需的模型类数据对象，主要用来提供给Mixi扩展类使用。
-				- 在试图中可以调用该方法获取详情信息的模型类对象。
-				- 若详情访问的模型类对象不存在，会返回404。
-				- 该方法会默认使用APIView提供的check_object_permissions方法检查当前对象是否有权限被访问。
-			- 其他可以设置的属性
-			pagination_class指明分页控制类
-			filter_backends指明数据过滤控制后端
-			```
-			class StudentGenericAPIView(GenericAPIView):
-				queryset = Student.objects.all()
-				serializer_class = StudentModelSerializers
-
-				def get(self, request):
-					queryset = self.get_queryset()  # GenericAPIView提供的方法
-					serializer = self.get_serializer(instance=queryset, many=True)
-					return Response(serializer.data)
-
-				def post(self, request):
-					serializer = self.get_serializer(data=request.data)
-					serializer.is_valid(raise_exception=True)
-					serializer.save()
-					return Response(serializer.data, status=status.HTTP_201_CREATED)
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView
+from rest_framework.generics import ListCreateAPIView,RetrieveUpdateAPIView
+# class StudentView(ListAPIView, CreateAPIView):
+class StudentView(ListCreateAPIView):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
 
 
-			class StudentInfoGenericAPIView(GenericAPIView):
-				queryset = Student.objects.all()
-				serializer_class = StudentModelSerializers
+# class StudentInfoView(RetrieveAPIView, UpdateAPIView):
+class StudentInfoView(RetrieveUpdateAPIView):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
+```
+### 视图集ViewSet
+- 使用视图集ViewSet,可以将一系列视图相关的代码逻辑和相关的http请求动作封装到一个类中：
+	- list()提供一组数据
+	- retrieve()提供单个数据
+	- create)创建数据
+	- update()保存数据
+	- destory()删除数据
+- ViewSet视图集类不再限制视图方法名只允许get()、post()等这种情况了而是实现允许开发者根据自己的需要定义自定义方法名，例如list)、create()等，然后经过路由中使用htp和这些视图方法名进行绑定调用。
+- 视图集只在使用as_view()方法的时候，才会将action动作与具体请求方式对应上。
+- 基本视图集ViewSet解决了APIview中代码重复的问题
+	```
+	file:view.py
+	from rest_framework.viewsets import ViewSet
+	
+	class StudentViewSet(ViewSet):
+		"""
+		可以把所有操作写在一个类里面
+		"""
 
-				def get(self, request, pk):
-					instance = self.get_object()
-					serializer = self.get_serializer(instance=instance)
-					return Response(serializer.data)
-
-				def put(self, request, pk):
-					instance = self.get_object()
-					serializer = self.get_serializer(instance=instance, data=request.data)
-					serializer.is_valid(raise_exception=True)
-					serializer.save()
-					return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-				def delete(self, request, pk):
-					self.get_object().delete()
-					return Response(status=status.HTTP_204_NO_CONTENT)
-			```
-			
-	- 五个视图扩展类
-		```
-		file:views.py
-		
-		from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
-		
-		class StudentMixView(GenericAPIView, ListModelMixin, CreateModelMixin):
-			queryset = Student.objects.all()
-			serializer_class = StudentModelSerializers
-
-			def get(self, request):
-				return self.list(request)
-
-			def post(self, request):
-				return self.create(request)
-
-
-		class StudentInfoMixView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin):
-			queryset = Student.objects.all()
-			serializer_class = StudentModelSerializers
-
-			def get(self, request, pk):
-				return self.retrieve(request, pk=pk)
-
-			def put(self, request, pk):
-				return self.update(request, pk=pk)
-
-			def delete(self, request, pk):
-				return self.destroy(request, pk=pk)
-		```
-	- 九个视图子类
-		- 上面的接口代码还可以续更加的精简，drf在使用GenericAPIView和Mixins进行组合以后，还是供了视图子类。
-		- 视图子类是通用视图类和模型甘扩展类的子类，提供了各种的视图方法调用mixins操作
-			- ListAPIView = GenericAPIView + ListModelMixin 获取多条数据的视图方法
-			- CreateAPIView = GenericAPIView + CreateModelMixin 添加一条数据的视图方法
-			- RetrieveAPIV1ew=GenericAPIView + RetrieveModeLMiXin 获取一条数据的视图方法
-			- UpdateAPIView = GenericAPIView + UpdateModelMixin 更新一条数据的视图方法
-			- DestroyAPIView  = GenericAPIView + DestroyModelMixin 删除一条数据的视图方法
-		- 组合视图子类
-			- ListcreateAPIview = ListAPIView + CreateAPIView
-			- RetrieveUpdateAPIView = RetrieveAPIView + UpdateAPIView
-			- RetrieveDestroyAPIView = RetrieveAPIView + DestroyAPIView
-			- RetrieveUpdateDestroyAPIView = RetrieveAPIView + UpdateAPIView + DestroyAPIView
-		```
-		file:views.py
-		
-		from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView
-		from rest_framework.generics import ListCreateAPIView,RetrieveUpdateAPIView
-		# class StudentView(ListAPIView, CreateAPIView):
-		class StudentView(ListCreateAPIView):
-			queryset = Student.objects.all()
-			serializer_class = StudentModelSerializers
-
-
-		# class StudentInfoView(RetrieveAPIView, UpdateAPIView):
-		class StudentInfoView(RetrieveUpdateAPIView):
-			queryset = Student.objects.all()
-			serializer_class = StudentModelSerializers
-		```
-3. 视图集ViewSet
-	- 使用视图集ViewSet,可以将一系列视图相关的代码逻辑和相关的http请求动作封装到一个类中：
-		- list()提供一组数据
-		- retrieve()提供单个数据
-		- create)创建数据
-		- update()保存数据
-		- destory()删除数据
-	- ViewSet视图集类不再限制视图方法名只允许get()、post()等这种情况了而是实现允许开发者根据自己的需要定义自定义方法名，例如list)、create()等，然后经过路由中使用htp和这些视图方法名进行绑定调用。
-	- 视图集只在使用as_view()方法的时候，才会将action动作与具体请求方式对应上。
-	- 基本视图集ViewSet解决了APIview中代码重复的问题
-		```
-		file:view.py
-		from rest_framework.viewsets import ViewSet
-		
-		class StudentViewSet(ViewSet):
-			"""
-			可以把所有操作写在一个类里面
-			"""
-
-			def get_list(self, request):
-				student_list = Student.objects.all()
-				serializer = StudentModelSerializers(instance=student_list, many=True)
-				return Response(serializer.data)
-
-			def post(self, request):
-				serializer = StudentModelSerializers(data=request.data)
-				serializer.is_valid(raise_exception=True)
-				serializer.save()
-				return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-			def get_student_info(self, request, pk):
-				try:
-					student = Student.objects.get(pk=pk)
-				except Student.DoesNotExist:
-					return Response(status=status.HTTP_404_NOT_FOUND)
-				serializer = StudentModelSerializers(instance=student)
-				return Response(serializer.data)
-
-			def update(self, request, pk):
-				try:
-					student = Student.objects.get(pk=pk)
-				except Student.DoesNotExist:
-					return Response(status=status.HTTP_404_NOT_FOUND)
-				serializer = StudentModelSerializers(instance=student, data=request.data)
-				serializer.is_valid(raise_exception=True)
-				serializer.save()
-				return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-			def delete(self, request, pk):
-				pass
-		```
-		```
-		file:urls.py
-		
-		urlpatterns = [
-			path('students5/', views.StudentViewSet.as_view({
-				'get': 'get_list',
-				'post': 'post',
-			})),L
-			re_path(r'^students5/(?P<pk>\d+)/$', views.StudentViewSet.as_view({
-				'get': 'get_student_info',
-				'put': 'update',
-			})),
-		]
-		```
-	- 通用视图集GenericViewSet解决了ViewSet中代码重复的问题
-		```
-		file:urls.py
-		
-		urlpatterns = [
-			path('students6/', views.StudentGenericViewSet.as_view({
-				'get': 'list',
-				'post': 'create',
-			})),
-
-			re_path(r'^students6/(?P<pk>\d+)/$', views.StudentGenericViewSet.as_view({
-				'get': 'retrieve',
-				'put': 'update',
-				'delete': 'destory',
-			})),
-		]
-		```
-		```
-		file:views.py
-		
-		class StudentGenericViewSet(GenericViewSet):
-		queryset = Student.objects.all()
-		serializer_class = StudentModelSerializers
-
-		def list(self, request):
-			queryset = self.get_queryset()
-			serializer = self.get_serializer(instance=queryset, many=True)
+		def get_list(self, request):
+			student_list = Student.objects.all()
+			serializer = StudentModelSerializers(instance=student_list, many=True)
 			return Response(serializer.data)
 
-		def create(self, request):
-			serializer = self.get_serializer(data=request.data)
+		def post(self, request):
+			serializer = StudentModelSerializers(data=request.data)
 			serializer.is_valid(raise_exception=True)
 			serializer.save()
 			return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-		def retrieve(self, request, pk):
-			instance = self.get_object()
-			serializer = self.get_serializer(instance=instance)
+		def get_student_info(self, request, pk):
+			try:
+				student = Student.objects.get(pk=pk)
+			except Student.DoesNotExist:
+				return Response(status=status.HTTP_404_NOT_FOUND)
+			serializer = StudentModelSerializers(instance=student)
 			return Response(serializer.data)
 
 		def update(self, request, pk):
-			instance = self.get_object()
-			serializer = self.get_serializer(instance=instance, data=request.data)
+			try:
+				student = Student.objects.get(pk=pk)
+			except Student.DoesNotExist:
+				return Response(status=status.HTTP_404_NOT_FOUND)
+			serializer = StudentModelSerializers(instance=student, data=request.data)
 			serializer.is_valid(raise_exception=True)
 			serializer.save()
 			return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-		def destory(self, request, pk):
-			self.get_object().delete()
-			return Response(status=status.HTTP_204_NO_CONTENT)
-		```
-	- GenericViewSet 通用视图集+混入类
-		```
-		file:views.py
-		
-		from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
-		
-		class StudentGenericViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin,DestroyModelMixin):
-			queryset = Student.objects.all()
-			serializer_class = StudentModelSerializers
-		```
-	- 上面继承的类太多，合并视图集
-	- ReadonlyModelViewset = mixins.RetrieveModelMixin + mixins.ListModelMixin + GenericViewset
-		```
-		class StudentReadOnlyModelViewSet(ReadOnlyModelViewSet, CreateModelMixin, UpdateModelMixin, DestroyModelMixin):
-			queryset = Student.objects.all()
-			serializer_class = StudentModelSerializers
-		```
-	- ModelViewSet = ReadOnlyModelViewSet + CreateModelMixin + UpdateModelMixin + DestroyModelMixin
-	- 实现了5个API接口
-		```
-		class StudentModelViewSet(ModelViewSet):
-			queryset = Student.objects.all()
-			serializer_class = StudentModelSerializers
-		```
+		def delete(self, request, pk):
+			pass
+	```
+	```
+	file:urls.py
+	
+	urlpatterns = [
+		path('students5/', views.StudentViewSet.as_view({
+			'get': 'get_list',
+			'post': 'post',
+		})),L
+		re_path(r'^students5/(?P<pk>\d+)/$', views.StudentViewSet.as_view({
+			'get': 'get_student_info',
+			'put': 'update',
+		})),
+	]
+	```
+- 通用视图集GenericViewSet解决了ViewSet中代码重复的问题
+	```
+	file:urls.py
+	
+	urlpatterns = [
+		path('students6/', views.StudentGenericViewSet.as_view({
+			'get': 'list',
+			'post': 'create',
+		})),
+
+		re_path(r'^students6/(?P<pk>\d+)/$', views.StudentGenericViewSet.as_view({
+			'get': 'retrieve',
+			'put': 'update',
+			'delete': 'destory',
+		})),
+	]
+	```
+	```
+	file:views.py
+	
+	class StudentGenericViewSet(GenericViewSet):
+	queryset = Student.objects.all()
+	serializer_class = StudentModelSerializers
+
+	def list(self, request):
+		queryset = self.get_queryset()
+		serializer = self.get_serializer(instance=queryset, many=True)
+		return Response(serializer.data)
+
+	def create(self, request):
+		serializer = self.get_serializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+	def retrieve(self, request, pk):
+		instance = self.get_object()
+		serializer = self.get_serializer(instance=instance)
+		return Response(serializer.data)
+
+	def update(self, request, pk):
+		instance = self.get_object()
+		serializer = self.get_serializer(instance=instance, data=request.data)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+	def destory(self, request, pk):
+		self.get_object().delete()
+		return Response(status=status.HTTP_204_NO_CONTENT)
+	```
+- GenericViewSet 通用视图集+混入类
+	```
+	file:views.py
+	
+	from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
+	
+	class StudentGenericViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin,DestroyModelMixin):
+		queryset = Student.objects.all()
+		serializer_class = StudentModelSerializers
+	```
+- 上面继承的类太多，合并视图集
+- ReadonlyModelViewset = mixins.RetrieveModelMixin + mixins.ListModelMixin + GenericViewset
+	```
+	class StudentReadOnlyModelViewSet(ReadOnlyModelViewSet, CreateModelMixin, UpdateModelMixin, DestroyModelMixin):
+		queryset = Student.objects.all()
+		serializer_class = StudentModelSerializers
+	```
+- ModelViewSet = ReadOnlyModelViewSet + CreateModelMixin + UpdateModelMixin + DestroyModelMixin
+- 实现了5个API接口
+	```
+	class StudentModelViewSet(ModelViewSet):
+		queryset = Student.objects.all()
+		serializer_class = StudentModelSerializers
+	```
 # 路由Routers
-- 对于视图集ViewSet,我们除了可以自己手动指明请求方式与动作action之间的对应关系外，还可以使用Routers来帮助我们快速实现路由信息。如果是非视图集，不需要使用路由集routers
+- 对于视图集ViewSet,我们除了可以自己手动指明请求方式与动作action之间的对应关系外，还可以使用Routers来帮助我们快速实现路由信息。依赖于视图集，只有使用了视图集，才可以使用自动生成路由，如果是非视图集，不需要使用路由集routers
 - REST framework提供了两个router类,使用方式一致的。结果多一个或少一个根目录url地址的问题而已，用任何一个都可以。
 	- SimpleRouter
 	- DefaultRouter
-1. 使用方法
+## 使用方法
 ```
 file:urls.py
 
@@ -1917,7 +1920,7 @@ router = DefaultRouter()  # 会含有根路由
 # register(prefix, viewset, base_name)
 	# prefix 该视图集的路由前缀	
 	# viewset 视图集
-	# base_name 路由别名的前缀
+	# base_name 路由别名的前缀，用来生成urls名字
 router.register('studentR', views.StudentModelViewSet, basename='studentR')
 print(f'router.urls：{router.urls}')
 # 把生成的路由列表和urlpatterns进行拼接组合
@@ -1933,15 +1936,14 @@ Vary: Accept
 	"studentR": "http://127.0.0.1:8000/viewdemo/studentR/"
 }
 ```
-2. 视图集中附加action的声明
+## 视图集中附加action的声明
 ```
 action装饰器可以接收两个参数：
 	methods: 声明该action对应的请求方式，列表传递
-	detail: 声明该action的路径是否与单一资源对应
-路由前缀/<pk>/action方法名/
-	True 表示路径格式是xxx/<pk>/action方法名/
-	False 表示路径格式是xxx/action方法名/
-url_path：声明该action的路由尾缀。
+	detail: 声明该action的路径是否与单一资源对应，以及是否是：路由前缀/<pk>/action方法名/
+		True 表示路径格式是xxx/<pk>/action方法名/
+		False 表示路径格式是xxx/action方法名/
+	url_path：声明该action的路由尾缀。
 
 from rest_framework.decorators import action
 
@@ -1957,6 +1959,45 @@ class StudentModelViewSet(ModelViewSet):
     @action(methods=['get'], detail=False)
     def login2(self, request):
         return Response({'msg': 'login success!'})
+```
+## 标记额外的路由行为
+viewset只定义了list, update, retrieve, create, update, destory, partial_update方法,  如果你想自定义一些额外的操作，可以使用@detail_route 或者 @list_route来实现@detail_route 装饰器在其 URL 模式中包含 pk，用于支持需要获取单个实例的方法。@list_route 修饰器适用于在对象列表上操作的方法。
+```
+from django.contrib.auth.models import User
+from rest_framework import status
+from rest_framework import viewsets
+from rest_framework.decorators import detail_route, list_route
+from rest_framework.response import Response
+from myapp.serializers import UserSerializer, PasswordSerializer
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    提供标准操作的视图集
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    
+    # 如果你不想使用默认的url，你可以通过设置url_path参数来改变url
+    # 如果您不想使用生成的默认名称，则可以使用 url_name 参数对其进行自定义
+    @detail_route(methods=['post'], url_path='change-password')
+    def set_password(self, request, pk=None):
+        user = self.get_object()
+        serializer = PasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user.set_password(serializer.data['password'])
+            user.save()
+            return Response({'status': 'password set'})
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    @list_route()
+    def recent_users(self, request):
+        recent_users = User.objects.all().order('-last_login')
+        page = self.paginate_queryset(recent_users)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(recent_users, many=True)
+        return Response(serializer.data)
 ```
 # 认证
 ## Django三种认证方式
